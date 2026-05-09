@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liga Oriental - Panel Público</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>LIGA <span class="accent-text">ORIENTAL</span></h1>
+        <p style="text-align:center; color:#b0bcc4; margin:10px 0 0 0; font-size:0.9rem;">🎿 Panel Público - Datos en Tiempo Real</p>
+        <nav class="nav-main">
+            <button class="nav-btn active" onclick="mostrarSeccion('tablas', this)">TABLAS</button>
+            <button class="nav-btn" onclick="mostrarSeccion('fixture', this)">📅 FIXTURE</button>
+            <button class="nav-btn" onclick="mostrarSeccion('stats', this)">📊 STATS</button>
+            <button class="nav-btn" onclick="mostrarSeccion('fama', this)">🏆 FAMA</button>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Selector de Torneo -->
+        <div style="max-width:1100px; margin:20px auto; width:95%;">
+            <div class="box">
+                <label style="color:#eab308; font-weight:bold; display:block; margin-bottom:10px; font-size:0.9rem; text-transform:uppercase;">Seleccionar Torneo:</label>
+                <select id="selectTorneoPub" onchange="cambiarTorneoPub(this.value)" style="width:100%; padding:12px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; font-size:1rem;">
+                    <option>Cargando torneos...</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Sección Tablas -->
+        <section id="sec-tablas" class="section active">
+            <div class="box" style="max-width:1100px; margin:0 auto; width:95%;">
+                <label style="color:#eab308; font-weight:bold; display:block; margin-bottom:10px; font-size:0.9rem; text-transform:uppercase;">Seleccionar Día:</label>
+                <select id="selectDiaPub" onchange="cargarTablaPub(this.value)" style="width:100%; padding:12px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:15px;">
+                    <option value="">Todos los días</option>
+                    <option value="Lunes">Lunes</option>
+                    <option value="Miercoles">Miércoles</option>
+                    <option value="Jueves">Jueves</option>
+                    <option value="Viernes">Viernes</option>
+                    <option value="Sabado">Sábado</option>
+                    <option value="Domingo">Domingo</option>
+                </select>
+            </div>
+            <div id="tablaPub" class="box" style="max-width:1100px; margin:0 auto; width:95%; overflow-x:auto;"></div>
+        </section>
+
+        <!-- Sección Fixture -->
+        <section id="sec-fixture" class="section">
+            <div id="fixturePub" class="box" style="max-width:1100px; margin:0 auto; width:95%;"></div>
+        </section>
+
+        <!-- Sección Estadísticas -->
+        <section id="sec-stats" class="section">
+            <div class="box" style="max-width:1100px; margin:0 auto; width:95%;">
+                <canvas id="chartGoleadoresPub" height="60"></canvas>
+            </div>
+            <div class="box" style="max-width:1100px; margin:0 auto; width:95%;">
+                <canvas id="chartEquiposPub" height="60"></canvas>
+            </div>
+        </section>
+
+        <!-- Sección Fama -->
+        <section id="sec-fama" class="section">
+            <div id="famaPub" class="fama-grid" style="max-width:1100px; margin:0 auto; width:95%;"></div>
+        </section>
+    </main>
+
+    <script src="js/supabase-config.js"></script>
+    <script>
+        let torneoActualPub = null;
+        let chartGolPub = null;
+        let chartEqPub = null;
+
+        async function inicializarPublico() {
+            const torneos = await db.getTorneos();
+            if (torneos.length > 0) {
+                torneoActualPub = torneos[0].id;
+                const options = torneos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+                document.getElementById('selectTorneoPub').innerHTML = options;
+                await cargarTablaPub('');
+                // Actualizar cada 30 segundos
+                setInterval(() => cargarTablaPub(document.getElementById('selectDiaPub').value), 30000);
+            }
+        }
+
+        async function cambiarTorneoPub(id) {
+            torneoActualPub = parseInt(id);
+            await cargarTablaPub('');
+        }
+
+        function mostrarSeccion(id, btn) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById('sec-' + id).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            
+            if (id === 'stats') renderStatsPublico();
+            if (id === 'fama') renderFamaPublico();
+            if (id === 'fixture') renderFixturePublico();
+        }
+
+        async function cargarTablaPub(dia) {
+            if (!torneoActualPub) return;
+            
+            const equipos = await db.getEquipos(torneoActualPub);
+            const filtrados = dia ? equipos.filter(e => e.dia_semana === dia) : equipos;
+            const ordenados = filtrados.sort((a, b) => b.pts - a.pts || (b.gf - b.gc) - (a.gf - a.gc));
+            
+            let html = `
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:#30363d;">
+                            <th style="padding:12px; color:#eab308;">Pos</th>
+                            <th style="padding:12px; color:#eab308; text-align:left;">Equipo</th>
+                            <th style="padding:12px; color:#eab308;">PJ</th>
+                            <th style="padding:12px; color:#eab308;">V</th>
+                            <th style="padding:12px; color:#eab308;">E</th>
+                            <th style="padding:12px; color:#eab308;">P</th>
+                            <th style="padding:12px; color:#eab308;">GF</th>
+                            <th style="padding:12px; color:#eab308;">GC</th>
+                            <th style="padding:12px; color:#eab308;">DF</th>
+                            <th style="padding:12px; color:#eab308;"><b>PTS</b></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${ordenados.map((e, i) => `
+                            <tr style="border-bottom:1px solid #30363d; ${i % 2 ? 'background:rgba(0,0,0,0.2);' : ''}">
+                                <td style="padding:12px; text-align:center;">${i + 1}</td>
+                                <td style="padding:12px; text-align:left;"><img src="${e.logo}" style="width:24px; height:24px; border-radius:50%; margin-right:8px; vertical-align:middle;"> ${e.nombre}</td>
+                                <td style="padding:12px; text-align:center;">${e.pj}</td>
+                                <td style="padding:12px; text-align:center;">${e.v}</td>
+                                <td style="padding:12px; text-align:center;">${e.e}</td>
+                                <td style="padding:12px; text-align:center;">${e.p}</td>
+                                <td style="padding:12px; text-align:center; color:#22c55e;">${e.gf}</td>
+                                <td style="padding:12px; text-align:center; color:#ef4444;">${e.gc}</td>
+                                <td style="padding:12px; text-align:center;">${e.gf - e.gc}</td>
+                                <td style="padding:12px; text-align:center; color:#eab308; font-weight:bold; font-size:1.1rem;">${e.pts}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            document.getElementById('tablaPub').innerHTML = html;
+        }
+
+        async function renderFixturePublico() {
+            if (!torneoActualPub) return;
+            
+            const fixture = await db.getFixture(torneoActualPub);
+            const grupos = fixture.reduce((acc, m) => {
+                const k = `${m.dia_semana} - ${m.fecha}`;
+                if (!acc[k]) acc[k] = [];
+                acc[k].push(m);
+                return acc;
+            }, {});
+            
+            let html = Object.keys(grupos).map(titulo => `
+                <div style="margin-bottom:20px;">
+                    <h3 style="color:#eab308; margin-bottom:15px;">${titulo}</h3>
+                    ${grupos[titulo].map(m => `
+                        <div class="fixture-item" style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:#0d1117; border-radius:8px; margin-bottom:10px; border-left:4px solid #eab308;">
+                            <span style="color:#b0bcc4; font-weight:bold;">${m.hora}</span>
+                            <div style="flex:1; text-align:right; margin-right:10px; font-weight:bold;">Equipo ${m.equipo_local_id}</div>
+                            <div style="margin:0 10px; color:#eab308; font-weight:bold;">VS</div>
+                            <div style="flex:1; font-weight:bold;">Equipo ${m.equipo_visitante_id}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `).join('');
+            
+            document.getElementById('fixturePub').innerHTML = html || '<p style="text-align:center; color:#b0bcc4;">No hay partidos programados</p>';
+        }
+
+        async function renderStatsPublico() {
+            if (!torneoActualPub) return;
+            
+            const jugadores = await db.getJugadores(torneoActualPub);
+            const equipos = await db.getEquipos(torneoActualPub);
+            
+            const goleadores = [...jugadores].sort((a, b) => b.goles - a.goles).slice(0, 10);
+            
+            // Gráfico goleadores
+            const ctxGol = document.getElementById('chartGoleadoresPub');
+            if (chartGolPub) chartGolPub.destroy();
+            chartGolPub = new Chart(ctxGol, {
+                type: 'bar',
+                data: {
+                    labels: goleadores.map(j => j.nombre),
+                    datasets: [{
+                        label: 'Goles',
+                        data: goleadores.map(j => j.goles),
+                        backgroundColor: '#eab308',
+                        borderColor: '#b8860b',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: '#ffffff' } } },
+                    scales: {
+                        y: { ticks: { color: '#ffffff' }, grid: { color: '#30363d' } },
+                        x: { ticks: { color: '#ffffff' }, grid: { color: '#30363d' } }
+                    }
+                }
+            });
+            
+            // Gráfico equipos
+            const ctxEq = document.getElementById('chartEquiposPub');
+            if (chartEqPub) chartEqPub.destroy();
+            const equiposOrdenados = [...equipos].sort((a, b) => b.pts - a.pts);
+            chartEqPub = new Chart(ctxEq, {
+                type: 'doughnut',
+                data: {
+                    labels: equiposOrdenados.map(e => e.nombre),
+                    datasets: [{
+                        data: equiposOrdenados.map(e => e.pts),
+                        backgroundColor: ['#eab308', '#3b82f6', '#22c55e', '#ef4444', '#a855f7', '#f97316', '#06b6d4', '#ec4899']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: '#ffffff' } } }
+                }
+            });
+        }
+
+        async function renderFamaPublico() {
+            if (!torneoActualPub) return;
+            
+            const jugadores = await db.getJugadores(torneoActualPub);
+            const cracks = [...jugadores].sort((a, b) => b.mvps - a.mvps || b.goles - a.goles).slice(0, 12);
+            
+            const html = cracks.map(j => `
+                <div class="ficha-ea">
+                    <div class="card-badge">
+                        <div class="rating" style="color:#eab308;">${Math.min(99, Math.max(10, Math.round(60 + (j.goles * 0.5) + (j.pj * 0.2) + ((j.mvps || 0) * 2.0) - ((j.amarillas || 0) * 0.5) - ((j.rojas || 0) * 2.0))))}</div>
+                        <div class="pos">${j.posicion}</div>
+                    </div>
+                    <img src="${j.foto}" class="perfil-ea">
+                    <div class="info-jugador-ea">
+                        <h3>${j.nombre}</h3>
+                        <div class="stats-ea">
+                            <span>⚽ ${j.goles}</span>
+                            <span>⭐ ${j.mvps || 0}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('famaPub').innerHTML = html;
+        }
+
+        document.addEventListener('DOMContentLoaded', inicializarPublico);
+    </script>
+</body>
+</html>
