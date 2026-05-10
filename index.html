@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liga Oriental - Progresión Pro 2026</title>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <header>
+        <h1>LIGA <span class="accent-text">ORIENTAL</span></h1>
+        <nav class="nav-main">
+            <button class="nav-btn active" onclick="showSec('inicio', this)">REGISTRO</button>
+            <button class="nav-btn" onclick="showSec('tablas', this)">TABLAS</button>
+            <button class="nav-btn" onclick="showSec('fixture', this)">📅 FIXTURE</button>
+            <button class="nav-btn" onclick="showSec('fama', this)">🏆 FAMA</button>
+            <button class="nav-btn" onclick="showSec('goleadores', this)">STATS</button>
+            <button class="nav-btn admin-btn" onclick="showSec('admin', this)">⚙️ ADMIN</button>
+        </nav>
+    </header>
+
+    <main>
+        <section id="sec-inicio" class="section active">
+            <div class="registro-container">
+                <div class="box">
+                    <h2>Registro de Jugador</h2>
+                    <label class="label-accent">CI del Jugador:</label>
+                    <input type="number" id="regCI" placeholder="Cédula de Identidad" oninput="updatePreview()">
+                    <label class="label-accent">Nombre:</label>
+                    <input type="text" id="regNom" placeholder="Nombre completo" oninput="updatePreview()">
+                    <div style="display: flex; gap: 10px;">
+                        <div style="flex:1">
+                            <label class="label-accent">Posición:</label>
+                            <select id="regPos" onchange="updatePreview()">
+                                <option value="POR">Portero</option><option value="DFC">Defensa</option>
+                                <option value="MC">Mediocampista</option><option value="DEL" selected>Delantero</option>
+                            </select>
+                        </div>
+                        <div style="flex:1">
+                            <label class="label-accent">Pierna:</label>
+                            <select id="regPierna" onchange="updatePreview()">
+                                <option value="R">Diestro</option><option value="L">Zurdo</option>
+                            </select>
+                        </div>
+                    </div>
+                    <label class="label-accent">Equipo:</label>
+                    <select id="regEqSelect" onchange="updatePreview()"></select>
+                    <label class="label-accent">Foto:</label>
+                    <input type="file" id="regFoto" accept="image/*" onchange="previewImage(this)">
+                    <button class="btn-main" onclick="savePlayer()">VINCULAR / CREAR FICHA</button>
+                </div>
+
+                <div id="cardPreview" class="ficha-ea">
+                    <div class="card-badge">
+                        <div id="preMedia" class="rating">60</div>
+                        <div id="prePos" class="pos">DEL</div>
+                        <div id="prePie" class="pie-tag" style="color:var(--accent); font-size:12px">R</div>
+                    </div>
+                    <img src="" id="preLogoEq" class="logo-equipo-card" style="display:none">
+                    <img src="https://placeholder.com" id="preImg" class="perfil-ea">
+                    <div class="info-jugador-ea">
+                        <h3 id="preNom">JUGADOR</h3>
+                        <div class="stats-ea">
+                            <span>⚽ <span id="preGoles">0</span></span>
+                            <span>🏃 <span id="prePJ">0</span></span>
+                            <span>⭐ <span id="preMVP">0</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="sec-tablas" class="section">
+            <div class="box">
+                <select id="selectDiaTablas" onchange="renderTabla(this.value)">
+                    <option disabled selected>Elegir Día para Tabla</option>
+                    <option>Lunes</option><option>Miercoles</option><option>Jueves</option>
+                    <option>Viernes</option><option>Sabado</option><option>Domingo</option>
+                </select>
+                <button class="btn-mini" onclick="descargarCaptura('tabla-oriental')" style="background:#22c55e; margin-top:10px; width:100%; color:white;">📸 DESCARGAR TABLA</button>
+            </div>
+            <div id="tabla-oriental" class="box" style="overflow-x:auto">
+                <table>
+                    <thead><tr><th>Pos</th><th>Equipo</th><th>PJ</th><th>V</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DF</th><th>PTS</th></tr></thead>
+                    <tbody id="bodyPos"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="sec-fixture" class="section"><div class="box"><h3>📅 Calendario</h3><div id="cont-fixture"></div></div></section>
+
+        <section id="sec-admin" class="section">
+            <div class="box">
+                <h3>1. Nuevo Equipo</h3>
+                <input type="text" id="adNom" placeholder="Nombre Equipo">
+                <select id="adDia"><option>Lunes</option><option>Miercoles</option><option>Jueves</option><option>Viernes</option><option>Sabado</option><option>Domingo</option></select>
+                <input type="file" id="adLog" accept="image/*">
+                <button class="btn-main" onclick="addEq()">+ GUARDAR EQUIPO</button>
+            </div>
+
+            <div class="box">
+                <h3>2. Cargar Resultado</h3>
+                <select id="resDiaFiltro" onchange="filtrarEquiposPorDia()"><option disabled selected>Elegir Día...</option><option>Lunes</option><option>Miercoles</option><option>Jueves</option><option>Viernes</option><option>Sabado</option><option>Domingo</option></select>
+                <div style="display:flex; gap:15px; flex-wrap:wrap; margin-top:10px;">
+                    <div style="flex:1; min-width:200px">
+                        <label class="label-accent">LOCAL:</label>
+                        <select id="resE1" onchange="actualizarListasJugadores()"></select>
+                        <input type="number" id="resG1" placeholder="Goles" oninput="generarInputsGoles('E1')">
+                        <div id="contGolesE1"></div><div id="contCardsE1"></div>
+                        <button class="btn-mini" onclick="agregarInputTarjeta('E1')">+ Tarjeta</button>
+                    </div>
+                    <div style="flex:1; min-width:200px">
+                        <label class="label-accent">VISITANTE:</label>
+                        <select id="resE2" onchange="actualizarListasJugadores()"></select>
+                        <input type="number" id="resG2" placeholder="Goles" oninput="generarInputsGoles('E2')">
+                        <div id="contGolesE2"></div><div id="contCardsE2"></div>
+                        <button class="btn-mini" onclick="agregarInputTarjeta('E2')">+ Tarjeta</button>
+                    </div>
+                </div>
+                <div style="margin-top:20px; border-top: 1px solid var(--border); padding-top:15px;">
+                    <label class="label-accent">MVP:</label><select id="resMVP"></select>
+                    <button class="btn-main" onclick="cargarResultadoGlobal()">💾 FINALIZAR PARTIDO</button>
+                </div>
+            </div>
+
+            <div class="box">
+                <h3>3. Generador de Fixture</h3>
+                <select id="fixDiaGen"><option>Lunes</option><option>Miercoles</option><option>Jueves</option><option>Viernes</option><option>Sabado</option><option>Domingo</option></select>
+                <div style="display:flex; gap:10px;">
+                    <input type="time" id="fixHoraInicio" value="19:00" style="flex:1">
+                    <input type="number" id="fixDuracion" value="60" style="flex:1">
+                </div>
+                <button class="btn-main" onclick="generarFixtureAuto()" style="background:#3b82f6; color:white;">⚡ GENERAR CALENDARIO</button>
+            </div>
+
+            <div class="box">
+                <h3>4. Gestionar Datos</h3>
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <input type="text" placeholder="Buscar CI o Nombre..." style="flex:2" oninput="renderGestionJugadores(this.value)">
+                    <select id="filtroDiaEliminar" style="flex:1" onchange="renderGestionEquipos(this.value)"><option value="">Equipos...</option><option>Lunes</option><option>Miercoles</option><option>Jueves</option><option>Viernes</option><option>Sabado</option><option>Domingo</option></select>
+                </div>
+                <div id="lista-gestion" style="max-height: 250px; overflow-y: auto; background: rgba(0,0,0,0.1); border-radius: 8px;"></div>
+            </div>
+        </section>
+
+        <section id="sec-goleadores" class="section">
+            <div class="box">
+                <select id="selectDiaStats" onchange="renderEstadisticas(this.value)"><option disabled selected>Ver Rankings</option><option>Lunes</option><option>Miercoles</option><option>Jueves</option><option>Viernes</option><option>Sabado</option><option>Domingo</option></select>
+                <div id="lista-goleadores"></div>
+            </div>
+        </section>
+
+        <section id="sec-fama" class="section"><div id="renderFama" class="fama-grid"></div></section>
+    </main>
+
+    <script src="https://cloudflare.com"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
