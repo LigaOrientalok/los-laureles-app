@@ -1,17 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Liga Oriental - Admin</title>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="css/style.css">
-
 </head>
-
 <body>
 
     <script src="js/supabase-config.js"></script>
@@ -20,18 +16,30 @@
     <script src="js/export.js"></script>
     <script src="js/script-v2.js"></script>
     <script src="js/auth.js"></script>
-
+    
     <script>
-
+        // ✅ FUNCIÓN PRINCIPAL (FIX)
         async function cargarApp() {
             const { data: { session } } = await supabase.auth.getSession();
-
+            
             if (!session) {
-                // ✅ FIX: usar sistema completo de auth
-                inicializarAuth();
+                inicializarAuth(); // ✅ FIX
             } else {
                 mostrarApp();
             }
+        }
+
+        // ✅ PROTECCIÓN ADMIN
+        async function accesoAdmin(btn) {
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (!session) {
+                alert("🔒 Tenés que iniciar sesión");
+                inicializarAuth();
+                return;
+            }
+
+            showSec('admin', btn);
         }
 
         function mostrarApp() {
@@ -54,12 +62,15 @@
                         <button class="nav-btn" onclick="showSec('fixture', this)">📅 FIXTURE</button>
                         <button class="nav-btn" onclick="showSec('stats', this)">📊 STATS</button>
                         <button class="nav-btn" onclick="showSec('fama', this)">🏆 FAMA</button>
-                        <button class="nav-btn admin-btn" onclick="showSec('admin', this)">⚙️ ADMIN</button>
+
+                        <!-- ✅ BOTÓN ADMIN PROTEGIDO -->
+                        <button class="nav-btn admin-btn" onclick="accesoAdmin(this)">⚙️ ADMIN</button>
                     </nav>
                 </header>
 
                 <main>
-                    <!-- TODO TU HTML ORIGINAL (no lo toqué) -->
+
+                    <!-- ========= REGISTRO ========= -->
                     <section id="sec-inicio" class="section active">
                         <div class="registro-container">
                             <div class="box">
@@ -97,19 +108,52 @@
 
                                 <button class="btn-main" onclick="savePlayer()">VINCULAR / CREAR FICHA</button>
                             </div>
-
-                            <div id="cardPreview" class="ficha-ea">
-                                <div class="card-badge">
-                                    <div id="preMedia" class="rating">60</div>
-                                    <div id="prePos" class="pos">DEL</div>
-                                    <div id="prePie" class="pie-tag">R</div>
-                                </div>
-                                <img src="" id="preLogoEq" class="logo-equipo-card" style="display:none">
-                                <img src="https://placeholder id="preNom">JUGADOR</h3>
-                                </div>
-                            </div>
                         </div>
                     </section>
+
+                    <!-- ========= TABLAS ========= -->
+                    <section id="sec-tablas" class="section">
+                        <div class="box">
+                            <select id="selectDiaTablas" onchange="renderTablaActual()">
+                                <option disabled selected>Elegir Día para Tabla</option>
+                                <option>Lunes</option>
+                                <option>Miercoles</option>
+                                <option>Jueves</option>
+                                <option>Viernes</option>
+                                <option>Sabado</option>
+                                <option>Domingo</option>
+                            </select>
+                        </div>
+
+                        <div id="tabla-oriental" class="box">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Pos</th>
+                                        <th>Equipo</th>
+                                        <th>PJ</th>
+                                        <th>V</th>
+                                        <th>E</th>
+                                        <th>P</th>
+                                        <th>GF</th>
+                                        <th>GC</th>
+                                        <th>DF</th>
+                                        <th>PTS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bodyPos"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- ========= ADMIN ========= -->
+                    <section id="sec-admin" class="section">
+                        <div class="box">
+                            <h3>Panel ADMIN 🔐</h3>
+                            <p>Acceso restringido solo a usuarios autenticados</p>
+                        </div>
+                    </section>
+
                 </main>
             `;
 
@@ -119,10 +163,9 @@
             }, 100);
         }
 
-        // ✅ FIX FINAL (el más importante de todos)
+        // ✅ INIT CORRECTO
         document.addEventListener('DOMContentLoaded', cargarApp);
 
     </script>
-
 </body>
 </html>
