@@ -348,3 +348,17 @@ function calcularRating(j) {
   media -= ((j.amarillas || 0) * 0.5) + ((j.rojas || 0) * 2.0);
   return Math.min(99, Math.max(10, Math.round(media)));
 }
+// ✅ CONTROL DE ACCESO ADMIN
+async function accesoAdmin(btn) {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    // 🔒 NO LOGUEADO
+    if (!session) {
+        alert("🔒 Tenés que iniciar sesión para acceder al ADMIN");
+        inicializarAuth(); // abre el login
+        return;
+    }
+
+    // ✅ LOGUEADO → PASA
+    showSec('admin', btn);
+}
