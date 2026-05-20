@@ -352,7 +352,7 @@ function calcularRating(j) {
 async function accesoAdmin(btn) {
     const { data: { session } } = await supabase.auth.getSession();
 
-    // 🔒 NO LOGUEADO
+    // 🔒 NO LOGUEADOaaa
     if (!session) {
         alert("🔒 Tenés que iniciar sesión para acceder al ADMIN");
         inicializarAuth(); // abre el login
