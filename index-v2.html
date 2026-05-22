@@ -9,6 +9,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Fuentes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Oswald:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+
     <!-- Estilos -->
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -34,19 +39,6 @@
             } else {
                 mostrarApp();
             }
-        }
-
-        // ✅ PROTEGER ADMIN
-        async function accesoAdmin(btn) {
-            const { data: { session } } = await supabase.auth.getSession();
-
-            if (!session) {
-                alert("🔒 Tenés que iniciar sesión");
-                inicializarAuth();
-                return;
-            }
-
-            showSec('admin', btn);
         }
 
         function mostrarApp() {

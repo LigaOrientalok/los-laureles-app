@@ -1,8 +1,12 @@
 // Dashboard de Administración de Usuarios
 
 async function mostrarPanelAdmin() {
-  // Recargar página con la app completa
-  location.href = 'index-v2.html?admin=true';
+  // Ir directo al panel admin en la página actual
+  const adminBtn = document.querySelector('.nav-btn.admin-btn') || document.querySelector('[onclick*="admin"]');
+  if (adminBtn) {
+    adminBtn.click();
+  }
+  agregarBotonUsuarios();
 }
 
 // Panel de gestión de usuarios
