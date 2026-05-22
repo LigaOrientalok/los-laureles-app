@@ -4,13 +4,25 @@ let usuarioActual = null;
 
 // Inicializar autenticación
 async function inicializarAuth() {
-  const { data: { session } } = await supabase.auth.getSession();
-  usuarioActual = session?.user || null;
-  
-  if (usuarioActual) {
-    mostrarPanelAdmin();
-  } else {
-    mostrarPanelLogin();
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    usuarioActual = session?.user || null;
+    
+    if (usuarioActual) {
+      mostrarPanelAdmin();
+    } else {
+      mostrarPanelLogin();
+    }
+  } catch (e) {
+    console.error('Error en auth:', e);
+    document.getElementById('loading-screen').innerHTML = `
+      <div style="text-align:center; padding:20px;">
+        <div style="font-size:3rem; margin-bottom:20px;">⚠️</div>
+        <h2 style="color:#ef4444; margin-bottom:10px;">Error de autenticación</h2>
+        <p style="color:#b0bcc4;">${e.message}</p>
+        <button onclick="location.reload()" style="margin-top:20px; padding:12px 30px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:1rem;">Reintentar</button>
+      </div>
+    `;
   }
 }
 
