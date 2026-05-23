@@ -167,7 +167,7 @@ window.generarFixtureAuto = async function() {
   
   const numE = equiposDia.length;
   for (let r = 0; r < numE - 1; r++) {
-    let fechaH = new Date(`2026-01-01T${horaInicio}:00`);
+    let fechaH = new Date(`${new Date().getFullYear()}-01-01T${horaInicio}:00`);
     for (let p = 0; p < numE / 2; p++) {
       const local = equiposDia[p];
       const visitante = equiposDia[numE - 1 - p];
@@ -209,7 +209,7 @@ window.filtrarEquiposPorDia = async function() {
 window.generarInputsGoles = async function(lado) {
   if (!torneoActual) return;
   
-  const n = document.getElementById('resG' + (lado === 'E1' ? '1' : '2')).value;
+  const n = parseInt(document.getElementById('resG' + (lado === 'E1' ? '1' : '2')).value) || 0;
   const equipoId = parseInt(document.getElementById('res' + (lado === 'E1' ? '1' : '2')).value);
   
   const jugadores = await db.getJugadores(torneoActual);
@@ -413,7 +413,7 @@ window.mostrarGestionEquipos = async function() {
         <input type="text" id="adNom" placeholder="Nombre del equipo" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px; box-sizing:border-box;">
         <label class="label-accent">Día:</label>
         <select id="adDia" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px;">
-          <option>Lunes</option><option>Miercoles</option><option>Jueves</option><option>Viernes</option><option>Sabado</option><option>Domingo</option>
+          <option>Lunes</option><option value="Miercoles">Miércoles</option><option>Jueves</option><option>Viernes</option><option value="Sabado">Sábado</option><option>Domingo</option>
         </select>
         <label class="label-accent">Logo:</label>
         <input type="file" id="adLog" accept="image/*" style="width:100%; margin-bottom:15px; color:white;">

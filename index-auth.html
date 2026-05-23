@@ -217,10 +217,10 @@
                             <select id="selectDiaTablas" onchange="renderTablaActual()">
                                 <option disabled selected>Elegir Día para Tabla</option>
                                 <option>Lunes</option>
-                                <option>Miercoles</option>
+                                <option value="Miercoles">Miércoles</option>
                                 <option>Jueves</option>
                                 <option>Viernes</option>
-                                <option>Sabado</option>
+                                <option value="Sabado">Sábado</option>
                                 <option>Domingo</option>
                             </select>
                         </div>
@@ -250,7 +250,7 @@
                         <div class="admin-only box">
                             <h3>📅 Generar Fixture</h3>
                             <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
-                                <div><label class="label-accent">Día:</label><select id="fixDiaGen"><option>Lunes</option><option>Miercoles</option><option>Jueves</option><option>Viernes</option><option>Sabado</option><option>Domingo</option></select></div>
+                                <div><label class="label-accent">Día:</label><select id="fixDiaGen"><option>Lunes</option><option value="Miercoles">Miércoles</option><option>Jueves</option><option>Viernes</option><option value="Sabado">Sábado</option><option>Domingo</option></select></div>
                                 <div><label class="label-accent">Hora inicio:</label><input type="time" id="fixHoraInicio" value="20:00" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;"></div>
                                 <div><label class="label-accent">Duración (min):</label><input type="number" id="fixDuracion" value="30" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; width:80px;"></div>
                                 <button onclick="generarFixtureAuto()" class="btn-mini" style="background:#22c55e; color:white;">Generar Fixture</button>
@@ -265,7 +265,7 @@
                         <div class="admin-only box">
                             <h3>⚽ Cargar Resultado</h3>
                             <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                                <div><label class="label-accent">Día:</label><select id="resDiaFiltro" onchange="filtrarEquiposPorDia()"><option>Lunes</option><option>Miercoles</option><option>Jueves</option><option>Viernes</option><option>Sabado</option><option>Domingo</option></select></div>
+                                <div><label class="label-accent">Día:</label><select id="resDiaFiltro" onchange="filtrarEquiposPorDia()"><option>Lunes</option><option value="Miercoles">Miércoles</option><option>Jueves</option><option>Viernes</option><option value="Sabado">Sábado</option><option>Domingo</option></select></div>
                                 <div><label class="label-accent">Local:</label><select id="resE1" onchange="actualizarListasJugadores()"></select></div>
                                 <div><label class="label-accent">Visitante:</label><select id="resE2" onchange="actualizarListasJugadores()"></select></div>
                                 <div><label class="label-accent">Goles Local:</label><input type="number" id="resG1" value="0" min="0" style="width:60px; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;" onchange="generarInputsGoles('E1')"></div>

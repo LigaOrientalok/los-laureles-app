@@ -18,10 +18,10 @@ function renderizarSelectorTorneos(torneos) {
     `<option value="${t.id}" ${t.id === torneoActual ? 'selected' : ''}>${t.nombre}</option>`
   ).join('');
 
-  selectTorneo.addEventListener('change', async (e) => {
+  selectTorneo.onchange = async (e) => {
     torneoActual = parseInt(e.target.value);
     await recargarDatos();
-  });
+  };
 }
 
 async function crearNuevoTorneo() {

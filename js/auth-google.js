@@ -53,6 +53,10 @@ function mostrarPanelLogin() {
           </div>
           
           <button onclick="loginUsuario()" style="width:100%; padding:14px; background:#eab308; color:black; font-weight:900; border:none; border-radius:8px; cursor:pointer; font-size:1rem; text-transform:uppercase; margin-bottom:15px; transition:0.3s;" onmouseover="this.style.background='#d4a403'" onmouseout="this.style.background='#eab308'">Iniciar Sesión</button>
+          
+          <p style="text-align:center; margin-top:-5px;">
+            <a href="#" onclick="resetPassword(); return false;" style="color:#3b82f6; font-size:0.85rem; text-decoration:none;">¿Olvidaste tu contraseña?</a>
+          </p>
         </div>
         
         <div style="text-align:center; margin:25px 0;">
@@ -174,6 +178,23 @@ async function loginUsuario() {
     }
   } catch (e) {
     mostrarError('Error: ' + e.message);
+  }
+}
+
+// Reset password
+async function resetPassword() {
+  const email = document.getElementById('loginEmail')?.value.trim();
+  if (!email) {
+    mostrarError('Ingresá tu email primero');
+    return;
+  }
+  const { error } = await _supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.href
+  });
+  if (error) {
+    mostrarError('Error: ' + error.message);
+  } else {
+    mostrarError('📧 Revisá tu email para restablecer la contraseña');
   }
 }
 
