@@ -16,7 +16,7 @@ async function mostrarDashboardUsuarios() {
     return;
   }
 
-  const { data: usuarios, error } = await supabase
+  const { data: usuarios, error } = await _supabase
     .from('usuarios')
     .select('*')
     .order('fecha_registro', { ascending: false });
@@ -91,7 +91,7 @@ async function mostrarDashboardUsuarios() {
 
 // Cambiar rol de usuario
 async function cambiarRol(usuarioId, nuevoRol) {
-  const { error } = await supabase
+  const { error } = await _supabase
     .from('usuarios')
     .update({ rol: nuevoRol })
     .eq('id', usuarioId);
@@ -112,7 +112,7 @@ async function cambiarEstado(usuarioId, nuevoEstado) {
     aprobado_por: usuarioActual?.id
   };
 
-  const { error } = await supabase
+  const { error } = await _supabase
     .from('usuarios')
     .update(actualizacion)
     .eq('id', usuarioId);
@@ -130,7 +130,7 @@ async function eliminarUsuario(usuarioId, email) {
   if (!confirm(`¿Eliminar usuario ${email}?`)) return;
 
   // Eliminar de tabla usuarios (la tabla auth.users se elimina automáticamente por CASCADE)
-  const { error } = await supabase
+  const { error } = await _supabase
     .from('usuarios')
     .delete()
     .eq('id', usuarioId);

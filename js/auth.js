@@ -5,7 +5,7 @@ let usuarioActual = null;
 // Inicializar autenticación
 async function inicializarAuth() {
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await _supabase.auth.getSession();
     usuarioActual = session?.user || null;
     
     if (usuarioActual) {
@@ -107,7 +107,7 @@ async function registrarUsuario() {
   }
   
   try {
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await _supabase.auth.signUp({
       email,
       password
     });
@@ -137,7 +137,7 @@ async function loginUsuario() {
   }
   
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await _supabase.auth.signInWithPassword({
       email,
       password
     });
@@ -156,7 +156,7 @@ async function loginUsuario() {
 
 // Cerrar sesión
 async function logoutUsuario() {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await _supabase.auth.signOut();
   if (error) {
     alert('Error al cerrar sesión');
   } else {

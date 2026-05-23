@@ -350,7 +350,7 @@ function calcularRating(j) {
 }
 // ✅ CONTROL DE ACCESO ADMIN
 async function accesoAdmin(btn) {
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await _supabase.auth.getSession();
 
     // 🔒 NO LOGUEADOaaa
     if (!session) {

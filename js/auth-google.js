@@ -5,12 +5,12 @@ let usuarioData = null;
 
 // Inicializar autenticación
 async function inicializarAuth() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await _supabase.auth.getSession();
   usuarioActual = session?.user || null;
   
   if (usuarioActual) {
     // Obtener datos del usuario
-    const { data, error } = await supabase
+    const { data, error } = await _supabase
       .from('usuarios')
       .select('*')
       .eq('id', usuarioActual.id)
@@ -127,7 +127,7 @@ async function registrarUsuario() {
   }
   
   try {
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await _supabase.auth.signUp({
       email,
       password
     });
@@ -156,7 +156,7 @@ async function loginUsuario() {
   }
   
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await _supabase.auth.signInWithPassword({
       email,
       password
     });
@@ -175,7 +175,7 @@ async function loginUsuario() {
 // Login con Google
 async function loginConGoogle() {
   try {
-    const { data, error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await _supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/index-auth-google.html`
@@ -214,7 +214,7 @@ Recibirás un email cuando tu cuenta sea aprobada.
 
 // Cerrar sesión
 async function logoutUsuario() {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await _supabase.auth.signOut();
   if (!error) {
     usuarioActual = null;
     usuarioData = null;
