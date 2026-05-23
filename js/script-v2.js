@@ -337,9 +337,18 @@ window.cargarResultadoGlobal = async function() {
 window.renderFama = async function() {
   if (!torneoActual) return;
   
-  const jugadores = await db.getJugadores(torneoActual);
+  const [jugadores, equipos] = await Promise.all([
+    db.getJugadores(torneoActual),
+    db.getEquipos(torneoActual)
+  ]);
   const cracks = [...jugadores].sort((a, b) => b.mvps - a.mvps || b.goles - a.goles).slice(0, 12);
   
+  const logoEq = (j) => {
+    const eqId = j.equipos?.[0];
+    const eq = equipos.find(e => e.id === eqId);
+    return eq?.logo || '';
+  };
+
   document.getElementById('renderFama').innerHTML = cracks.map(j => `
     <div class="ficha-ea">
       <div class="card-badge">
@@ -347,6 +356,7 @@ window.renderFama = async function() {
         <div class="pos">${j.posicion}</div>
       </div>
       <img src="${j.foto}" class="perfil-ea">
+      <img src="${logoEq(j)}" style="position:absolute;bottom:80px;right:10px;width:32px;height:32px;border-radius:50%;border:2px solid #eab308;background:#0d1117;object-fit:cover;" onerror="this.style.display='none'">
       <div class="info-jugador-ea">
         <h3>${j.nombre}</h3>
         <div class="stats-ea">
