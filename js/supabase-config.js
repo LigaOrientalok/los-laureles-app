@@ -69,9 +69,15 @@ const db = {
   },
 
   async getJugadores(torneoId) {
-    const { data, error } = await _supabase.from('jugadores').select('*').eq('torneo_id', torneoId);
-    this._handleError('Error fetching jugadores:', error);
-    return data || [];
+    const { data: jugadores, error } = await _supabase.from('jugadores').select('*').eq('torneo_id', torneoId);
+    if (error) { this._handleError('Error fetching jugadores:', error); return []; }
+    const { data: vinculos } = await _supabase.from('jugador_equipo').select('*');
+    if (vinculos) {
+      jugadores.forEach(j => {
+        j.equipos = vinculos.filter(v => v.jugador_id === j.id).map(v => v.equipo_id);
+      });
+    }
+    return jugadores;
   },
 
   async createJugador(torneoId, ci, nombre, posicion, pierna, foto) {
