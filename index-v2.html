@@ -46,7 +46,8 @@
                     inicializarAuth();
                 } else {
                     window._sessionCached = true;
-                    window.esAdmin = true;
+                    const { data: userData } = await _supabase.from('usuarios').select('rol').eq('email', session.user.email).single();
+                    window.esAdmin = (userData?.rol === 'admin');
                     mostrarApp();
                 }
             } catch (e) {

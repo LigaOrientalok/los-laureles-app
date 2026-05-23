@@ -9,7 +9,8 @@ async function inicializarAuth() {
     usuarioActual = session?.user || null;
     
     if (usuarioActual) {
-      window.esAdmin = true;
+      const { data: userData } = await _supabase.from('usuarios').select('rol').eq('email', usuarioActual.email).single();
+      window.esAdmin = (userData?.rol === 'admin');
       mostrarPanelAdmin();
     } else {
       mostrarPanelLogin();
