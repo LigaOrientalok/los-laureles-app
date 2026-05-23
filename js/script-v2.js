@@ -367,6 +367,8 @@ function calcularRating(j) {
 async function accesoAdmin(btn) {
     if (window._sessionCached) {
         showSec('admin', btn);
+        const el = document.getElementById('admin-email');
+        if (el && window.usuarioActual) el.textContent = window.usuarioActual.email;
         return;
     }
     try {
@@ -378,9 +380,13 @@ async function accesoAdmin(btn) {
         }
         window._sessionCached = true;
         showSec('admin', btn);
+        const el = document.getElementById('admin-email');
+        if (el) el.textContent = session.user?.email || '';
     } catch (e) {
         if (window.usuarioActual) {
             showSec('admin', btn);
+            const el = document.getElementById('admin-email');
+            if (el && window.usuarioActual) el.textContent = window.usuarioActual.email;
             return;
         }
         alert("🔒 Error de conexión. Intentalo de nuevo.");

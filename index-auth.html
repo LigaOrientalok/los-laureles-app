@@ -45,15 +45,47 @@
         async function accesoAdmin(btn) {
             if (window._sessionCached || window.usuarioActual) {
                 showSec('admin', btn);
+                const el = document.getElementById('admin-email');
+                if (el && window.usuarioActual) el.textContent = window.usuarioActual.email;
             } else {
                 const { data: { session } } = await _supabase.auth.getSession();
                 if (session) {
                     window._sessionCached = true;
                     showSec('admin', btn);
+                    const el = document.getElementById('admin-email');
+                    if (el) el.textContent = session.user?.email || '';
                 } else {
                     alert("🔒 Tenés que iniciar sesión");
                     inicializarAuth();
                 }
+            }
+        }
+
+        async function mostrarGestionUsuarios() {
+            const cont = document.getElementById('admin-content');
+            if (!cont) return;
+            cont.innerHTML = '<p style="color:#b0bcc4;">Cargando usuarios...</p>';
+            try {
+                const { data: usuarios, error } = await _supabase.from('usuarios').select('*').order('fecha_registro', { ascending: false });
+                if (error) { cont.innerHTML = '<p style="color:#ef4444;">Error al cargar usuarios</p>'; return; }
+                cont.innerHTML = `
+                    <div style="overflow-x:auto;">
+                        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+                            <thead><tr style="background:#30363d;">
+                                <th style="padding:8px; color:#eab308; text-align:left;">Email</th>
+                                <th style="padding:8px; color:#eab308;">Rol</th>
+                                <th style="padding:8px; color:#eab308;">Estado</th>
+                            </tr></thead>
+                            <tbody>${usuarios.map(u => `
+                                <tr style="border-bottom:1px solid #30363d;">
+                                    <td style="padding:8px;">${u.email}</td>
+                                    <td style="padding:8px; text-align:center;"><span style="background:${u.rol === 'admin' ? '#3b82f6' : u.rol === 'arbitro' ? '#f97316' : '#30363d'}; padding:2px 8px; border-radius:4px;">${u.rol || 'usuario'}</span></td>
+                                    <td style="padding:8px; text-align:center;"><span style="color:${u.estado === 'aprobado' ? '#22c55e' : u.estado === 'rechazado' ? '#ef4444' : '#f97316'};">${u.estado || 'pendiente'}</span></td>
+                                </tr>`).join('')}</tbody>
+                        </table>
+                    </div>`;
+            } catch (e) {
+                cont.innerHTML = '<p style="color:#ef4444;">Error de conexión</p>';
             }
         }
 
@@ -242,7 +274,11 @@
                     <section id="sec-admin" class="section">
                         <div class="box">
                             <h3>Panel ADMIN 🔐</h3>
-                            <p>Acceso restringido solo a usuarios autenticados</p>
+                            <p style="color:#22c55e;">✅ Sesión iniciada como <strong id="admin-email"></strong></p>
+                            <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap;">
+                                <button onclick="mostrarGestionUsuarios()" class="btn-mini" style="background:#3b82f6; color:white;">📄 Gestionar Usuarios</button>
+                            </div>
+                            <div id="admin-content" style="margin-top:15px;"></div>
                         </div>
                     </section>
 
