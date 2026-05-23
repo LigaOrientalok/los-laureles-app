@@ -1,12 +1,8 @@
 // Script Principal actualizado con Supabase
 
-let tempImgJugador = "https://placeholder.com";
+let tempImgJugador = "https://via.placeholder.com/300x300?text=Sin+Foto";
 
-// Inicialización
-document.addEventListener('DOMContentLoaded', async () => {
-  await inicializarTorneos();
-  await updateSelects();
-});
+// Inicialización (se llama desde mostrarApp)
 
 window.showSec = function(id, btn) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -39,7 +35,8 @@ window.previewImage = async function(input) {
     const reader = new FileReader();
     reader.onload = async (e) => {
       tempImgJugador = await comprimirImagen(e.target.result);
-      document.getElementById('preImg').src = tempImgJugador;
+      const preImg = document.getElementById('preImg');
+      if (preImg) preImg.src = tempImgJugador;
       updatePreview();
     };
     reader.readAsDataURL(input.files[0]);
@@ -47,29 +44,46 @@ window.previewImage = async function(input) {
 };
 
 window.updatePreview = async function() {
-  if (!torneoActual) return;
+  const preNom = document.getElementById('preNom');
+  const prePos = document.getElementById('prePos');
+  const prePie = document.getElementById('prePie');
+  const preGoles = document.getElementById('preGoles');
+  const prePJ = document.getElementById('prePJ');
+  const preMedia = document.getElementById('preMedia');
+  const preLogoEq = document.getElementById('preLogoEq');
+  const regNom = document.getElementById('regNom');
+  const regPos = document.getElementById('regPos');
+  const regPierna = document.getElementById('regPierna');
+  const regCI = document.getElementById('regCI');
+  const regEqSelect = document.getElementById('regEqSelect');
+
+  if (preNom && regNom) preNom.innerText = regNom.value.toUpperCase() || "JUGADOR";
+  if (prePos && regPos) prePos.innerText = regPos.value;
+  if (prePie && regPierna) prePie.innerText = regPierna.value;
+  if (preGoles) preGoles.innerText = '0';
+  if (prePJ) prePJ.innerText = '0';
+  if (preMedia) preMedia.innerText = '60';
+
+  if (!torneoActual || !regCI) return;
   
-  const ci = document.getElementById('regCI').value.trim();
-  document.getElementById('preNom').innerText = document.getElementById('regNom').value.toUpperCase() || "JUGADOR";
-  document.getElementById('prePos').innerText = document.getElementById('regPos').value;
-  document.getElementById('prePie').innerText = document.getElementById('regPierna').value;
-  
-  const jugadores = await db.getJugadores(torneoActual);
-  const j = jugadores.find(x => x.ci === ci);
-  if(j) {
-    document.getElementById('preGoles').innerText = j.goles;
-    document.getElementById('prePJ').innerText = j.pj;
-    document.getElementById('preMedia').innerText = calcularRating(j);
+  const ci = regCI.value.trim();
+  if (ci) {
+    const jugadores = await db.getJugadores(torneoActual);
+    const j = jugadores.find(x => x.ci === ci);
+    if (j) {
+      if (preGoles) preGoles.innerText = j.goles;
+      if (prePJ) prePJ.innerText = j.pj;
+      if (preMedia) preMedia.innerText = calcularRating(j);
+    }
   }
   
-  const equipoId = parseInt(document.getElementById('regEqSelect').value);
-  if(equipoId) {
+  const equipoId = regEqSelect ? parseInt(regEqSelect.value) : null;
+  if (equipoId && preLogoEq) {
     const equipos = await db.getEquipos(torneoActual);
     const eq = equipos.find(e => e.id === equipoId);
-    if(eq) {
-      const logo = document.getElementById('preLogoEq');
-      logo.src = eq.logo;
-      logo.style.display = "block";
+    if (eq && eq.logo) {
+      preLogoEq.src = eq.logo;
+      preLogoEq.style.display = "block";
     }
   }
 };

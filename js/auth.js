@@ -15,12 +15,15 @@ async function inicializarAuth() {
     }
   } catch (e) {
     console.error('Error en auth:', e);
-    document.getElementById('loading-screen').innerHTML = `
-      <div style="text-align:center; padding:20px;">
-        <div style="font-size:3rem; margin-bottom:20px;">⚠️</div>
-        <h2 style="color:#ef4444; margin-bottom:10px;">Error de autenticación</h2>
-        <p style="color:#b0bcc4;">${e.message}</p>
-        <button onclick="location.reload()" style="margin-top:20px; padding:12px 30px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:1rem;">Reintentar</button>
+    const app = document.getElementById('app');
+    if (app) app.innerHTML = `
+      <div style="min-height:100vh; display:flex; justify-content:center; align-items:center; background:#0b0e14; color:white; font-family:sans-serif;">
+        <div style="text-align:center; padding:20px;">
+          <div style="font-size:3rem; margin-bottom:20px;">⚠️</div>
+          <h2 style="color:#ef4444; margin-bottom:10px;">Error de autenticación</h2>
+          <p style="color:#b0bcc4;">${e.message}</p>
+          <button onclick="location.reload()" style="margin-top:20px; padding:12px 30px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:1rem;">Reintentar</button>
+        </div>
       </div>
     `;
   }
@@ -28,7 +31,9 @@ async function inicializarAuth() {
 
 // Mostrar panel de login
 function mostrarPanelLogin() {
-  document.body.innerHTML = `
+  const app = document.getElementById('app');
+  if (!app) return;
+  app.innerHTML = `
     <div style="min-height:100vh; background:#0b0e14; display:flex; justify-content:center; align-items:center; padding:20px;">
       <div style="background:#161b22; border:2px solid #eab308; border-radius:12px; padding:40px; width:100%; max-width:400px; box-shadow:0 15px 50px rgba(0,0,0,0.8);">
         <h1 style="text-align:center; color:#eab308; margin-bottom:30px;">🔐 LIGA ORIENTAL</h1>
