@@ -17,6 +17,7 @@ async function inicializarAuth() {
       .single();
     
     usuarioData = data;
+    window.esAdmin = (usuarioData?.rol === 'admin');
     
     // Si está aprobado o es admin
     if (usuarioData?.estado === 'aprobado' || usuarioData?.rol === 'admin') {

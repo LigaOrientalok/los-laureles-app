@@ -9,6 +9,7 @@ async function inicializarAuth() {
     usuarioActual = session?.user || null;
     
     if (usuarioActual) {
+      window.esAdmin = true;
       mostrarPanelAdmin();
     } else {
       mostrarPanelLogin();

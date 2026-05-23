@@ -173,7 +173,7 @@
 
                     <!-- ========= FIXTURE ========= -->
                     <section id="sec-fixture" class="section">
-                        <div class="box">
+                        <div class="admin-only box">
                             <h3>📅 Generar Fixture</h3>
                             <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
                                 <div><label class="label-accent">Día:</label><select id="fixDiaGen"><option>Lunes</option><option>Miercoles</option><option>Jueves</option><option>Viernes</option><option>Sabado</option><option>Domingo</option></select></div>
@@ -188,7 +188,7 @@
                             <div id="cont-fixture"></div>
                         </div>
 
-                        <div class="box">
+                        <div class="admin-only box">
                             <h3>⚽ Cargar Resultado</h3>
                             <div style="display:flex; gap:10px; flex-wrap:wrap;">
                                 <div><label class="label-accent">Día:</label><select id="resDiaFiltro" onchange="filtrarEquiposPorDia()"><option>Lunes</option><option>Miercoles</option><option>Jueves</option><option>Viernes</option><option>Sabado</option><option>Domingo</option></select></div>
@@ -244,6 +244,10 @@
 
                 </main>
             `;
+
+            if (window.esAdmin !== true) {
+                document.querySelectorAll('.admin-only').forEach(el => el.remove());
+            }
 
             setTimeout(async () => {
                 await inicializarTorneos();
