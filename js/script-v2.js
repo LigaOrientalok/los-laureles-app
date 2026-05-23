@@ -363,6 +363,44 @@ function calcularRating(j) {
   media -= ((j.amarillas || 0) * 0.5) + ((j.rojas || 0) * 2.0);
   return Math.min(99, Math.max(10, Math.round(media)));
 }
+// ✅ FUNCIONES DE ADMIN PARA FIXTURE
+window.eliminarPartido = async function(id) {
+  if (!confirm('¿Eliminar este partido del fixture?')) return;
+  const { error } = await _supabase.from('fixture').delete().eq('id', id);
+  if (error) return alert('Error al eliminar: ' + error.message);
+  alert('🗑️ Partido eliminado');
+  renderFixtureActual();
+};
+
+window.cargarResultadoDeFixture = async function(fixtureId) {
+  const fixture = await db.getFixture(torneoActual);
+  const match = fixture.find(m => m.id === fixtureId);
+  if (!match) return alert('Partido no encontrado');
+
+  // Switch to fixture tab and fill the form
+  showSec('fixture', document.querySelector('[onclick*="fixture"]'));
+  
+  await new Promise(r => setTimeout(r, 200)); // wait for DOM to update
+  
+  document.getElementById('resDiaFiltro').value = match.dia_semana;
+  await filtrarEquiposPorDia();
+  
+  await new Promise(r => setTimeout(r, 100));
+  
+  document.getElementById('resE1').value = match.equipo_local_id;
+  document.getElementById('resE2').value = match.equipo_visitante_id;
+  await actualizarListasJugadores();
+  
+  document.getElementById('resG1').value = 0;
+  document.getElementById('resG2').value = 0;
+  document.getElementById('contGolesE1').innerHTML = '';
+  document.getElementById('contGolesE2').innerHTML = '';
+  document.getElementById('contCardsE1').innerHTML = '';
+  document.getElementById('contCardsE2').innerHTML = '';
+  
+  alert('✅ Partido cargado. Completá el resultado y guardá.');
+};
+
 // ✅ CONTROL DE ACCESO ADMIN
 async function accesoAdmin(btn) {
     if (window._sessionCached) {

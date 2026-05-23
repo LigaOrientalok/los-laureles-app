@@ -99,9 +99,17 @@ async function renderTablaActual() {
 async function renderFixtureActual() {
   if (!torneoActual) return;
 
-  const fixture = await db.getFixture(torneoActual);
+  const [fixture, equipos] = await Promise.all([
+    db.getFixture(torneoActual),
+    db.getEquipos(torneoActual)
+  ]);
   const cont = document.getElementById('cont-fixture');
   if (!cont) return;
+
+  const getEqName = (id) => {
+    const eq = equipos.find(e => e.id === id);
+    return eq ? eq.nombre : `Equipo ${id}`;
+  };
 
   const grupos = fixture.reduce((acc, m) => {
     const k = `${m.dia_semana} - ${m.fecha}`;
@@ -110,15 +118,23 @@ async function renderFixtureActual() {
     return acc;
   }, {});
 
+  const admin = window.esAdmin === true;
+
   cont.innerHTML = Object.keys(grupos).map(titulo => `
     <div style="margin-bottom:20px">
       <h3>${titulo}</h3>
       ${grupos[titulo].map(m => `
         <div class="fixture-item" style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:#0d1117; border-radius:8px; margin-bottom:10px; border-left:4px solid #eab308;">
-          <span>${m.hora}</span>
-          <div style="flex:1; text-align:right">Equipo ${m.equipo_local_id}</div>
-          <div style="margin:0 10px; font-size:10px">VS</div>
-          <div style="flex:1">Equipo ${m.equipo_visitante_id}</div>
+          <span style="font-weight:600; color:#eab308; min-width:50px;">${m.hora}</span>
+          <div style="flex:1; text-align:right; font-weight:600;">${getEqName(m.equipo_local_id)}</div>
+          <div style="margin:0 15px; font-size:0.75rem; color:#8b949e;">VS</div>
+          <div style="flex:1; font-weight:600;">${getEqName(m.equipo_visitante_id)}</div>
+          ${admin ? `
+            <div style="display:flex; gap:5px; margin-left:10px;">
+              <button onclick="cargarResultadoDeFixture(${m.id})" class="btn-mini" style="background:#22c55e; color:white; padding:4px 10px; font-size:0.75rem;">⚽ Resultado</button>
+              <button onclick="eliminarPartido(${m.id})" class="btn-mini" style="background:#ef4444; color:white; padding:4px 10px; font-size:0.75rem;">🗑️</button>
+            </div>
+          ` : ''}
         </div>
       `).join('')}
     </div>
