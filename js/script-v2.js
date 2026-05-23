@@ -434,6 +434,7 @@ window.mostrarGestionEquipos = async function() {
                     <strong style="color:white; font-size:1rem;">${eq.nombre}</strong>
                     <span style="color:#8b949e; font-size:0.8rem; display:block;">${eq.dia_semana} | PJ: ${eq.pj || 0} | PTS: ${eq.pts || 0}</span>
                   </div>
+                  <button onclick="editarEquipo(${eq.id})" class="btn-mini" style="background:#3b82f6; color:white; padding:4px 8px; font-size:0.7rem;">✏️</button>
                   <button onclick="eliminarEquipoAdmin(${eq.id})" style="margin-left:auto; background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:0.8rem;">🗑️</button>
                 </div>
                 ${jugsEq.length > 0 ? `
@@ -607,3 +608,447 @@ async function accesoAdmin(btn) {
         alert("🔒 Error de conexión. Intentalo de nuevo.");
     }
 }
+
+// =====================================================================
+// STEP 1: ELIMINAR / EDITAR RESULTADOS
+// =====================================================================
+
+window.eliminarResultado = async function(partidoFixtureId) {
+  if (!torneoActual) return;
+  if (!confirm('¿Eliminar este resultado? Se revertirán todas las estadísticas.')) return;
+
+  const [resultados, equipos, jugadores] = await Promise.all([
+    db.getResultados(torneoActual),
+    db.getEquipos(torneoActual),
+    db.getJugadores(torneoActual)
+  ]);
+
+  const res = resultados.find(r => r.fixture_id === partidoFixtureId);
+  if (!res) return alert('Resultado no encontrado');
+
+  const e1 = equipos.find(e => e.id === res.equipo_local_id);
+  const e2 = equipos.find(e => e.id === res.equipo_visitante_id);
+  if (!e1 || !e2) return alert('Equipos no encontrados');
+
+  // Revert team stats
+  const revertE1 = { ...e1, pj: Math.max(0, e1.pj - 1), gf: Math.max(0, e1.gf - res.goles_local), gc: Math.max(0, e1.gc - res.goles_visitante) };
+  const revertE2 = { ...e2, pj: Math.max(0, e2.pj - 1), gf: Math.max(0, e2.gf - res.goles_visitante), gc: Math.max(0, e2.gc - res.goles_local) };
+
+  if (res.goles_local > res.goles_visitante) {
+    revertE1.v = Math.max(0, e1.v - 1); revertE1.pts = Math.max(0, e1.pts - 3); revertE2.p = Math.max(0, e2.p - 1);
+  } else if (res.goles_visitante > res.goles_local) {
+    revertE2.v = Math.max(0, e2.v - 1); revertE2.pts = Math.max(0, e2.pts - 3); revertE1.p = Math.max(0, e1.p - 1);
+  } else {
+    revertE1.e = Math.max(0, e1.e - 1); revertE2.e = Math.max(0, e2.e - 1);
+    revertE1.pts = Math.max(0, e1.pts - 1); revertE2.pts = Math.max(0, e2.pts - 1);
+  }
+
+  if (res.goles_visitante === 0) revertE1.vallas_invictas = Math.max(0, e1.vallas_invictas - 1);
+  if (res.goles_local === 0) revertE2.vallas_invictas = Math.max(0, e2.vallas_invictas - 1);
+
+  await db.updateEquipo(e1.id, revertE1);
+  await db.updateEquipo(e2.id, revertE2);
+
+  // Revert player stats from goles
+  const [goles, tarjetas] = await Promise.all([
+    db.getGoles(res.id),
+    db.getTarjetas(res.id)
+  ]);
+
+  for (const gol of goles) {
+    const j = jugadores.find(x => x.id === gol.jugador_id);
+    if (j) {
+      await db.updateJugador(j.id, { ...j, goles: Math.max(0, j.goles - 1), pj: Math.max(0, j.pj - 1) });
+    }
+  }
+
+  for (const tarj of tarjetas) {
+    const j = jugadores.find(x => x.id === tarj.jugador_id);
+    if (j) {
+      const upd = { ...j };
+      upd[tarj.tipo === 'A' ? 'amarillas' : 'rojas'] = Math.max(0, (j[tarj.tipo === 'A' ? 'amarillas' : 'rojas'] || 0) - 1);
+      await db.updateJugador(j.id, upd);
+    }
+  }
+
+  // Revert MVP
+  if (res.mvp_id) {
+    const mvp = jugadores.find(x => x.id === res.mvp_id);
+    if (mvp) {
+      await db.updateJugador(mvp.id, { ...mvp, mvps: Math.max(0, mvp.mvps - 1) });
+    }
+  }
+
+  // Delete goles, tarjetas, resultado
+  await Promise.all([
+    db.deleteGolesByResultado(res.id),
+    db.deleteTarjetasByResultado(res.id)
+  ]);
+  await db.deleteResultado(res.id);
+
+  alert('🗑️ Resultado eliminado y estadísticas revertidas');
+  await recargarDatos();
+  renderFixtureActual();
+};
+
+window.cargarEdicionResultado = async function(fixtureId) {
+  await cargarResultadoDeFixture(fixtureId);
+  // Mark as edit mode so cargarResultadoGlobal knows to delete old result first
+  const editFlag = document.getElementById('resEditMode');
+  if (!editFlag) {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.id = 'resEditMode';
+    input.value = '1';
+    document.getElementById('resMVP').parentElement.appendChild(input);
+  } else {
+    editFlag.value = '1';
+  }
+};
+
+// Patch cargarResultadoGlobal to handle edit mode
+const _cargarResultadoGlobalOriginal = window.cargarResultadoGlobal;
+window.cargarResultadoGlobal = async function() {
+  const editFlag = document.getElementById('resEditMode');
+  const isEdit = editFlag?.value === '1';
+  const fiId = parseInt(document.getElementById('resFiId')?.value);
+
+  if (isEdit && fiId) {
+    if (!confirm('¿Guardar cambios? Se reemplazará el resultado anterior.')) return;
+    await eliminarResultado(fiId);
+    if (editFlag) editFlag.value = '0';
+  }
+
+  return _cargarResultadoGlobalOriginal();
+};
+
+// =====================================================================
+// STEP 2: EDITAR EQUIPOS Y JUGADORES
+// =====================================================================
+
+// --- EDITAR EQUIPO ---
+window.editarEquipo = async function(id) {
+  const equipos = await db.getEquipos(torneoActual);
+  const eq = equipos.find(e => e.id === id);
+  if (!eq) return;
+
+  const overlay = document.createElement('div');
+  overlay.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center;z-index:1000;';
+  overlay.id = 'edit-team-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  overlay.innerHTML = `
+    <div style="background:#161b22; border:2px solid #eab308; border-radius:12px; padding:30px; max-width:400px; width:90%; position:relative;">
+      <button onclick="this.closest('#edit-team-overlay').remove()" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
+      <h3 style="color:#eab308; margin-bottom:15px;">✏️ Editar Equipo</h3>
+      <label class="label-accent">Nombre:</label>
+      <input type="text" id="editEqNom" value="${eq.nombre}" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px; box-sizing:border-box;">
+      <label class="label-accent">Día:</label>
+      <select id="editEqDia" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px;">
+        <option>Lunes</option><option value="Miercoles" ${eq.dia_semana === 'Miercoles' ? 'selected' : ''}>Miércoles</option><option>Jueves</option><option>Viernes</option><option value="Sabado" ${eq.dia_semana === 'Sabado' ? 'selected' : ''}>Sábado</option><option>Domingo</option>
+      </select>
+      <label class="label-accent">Logo (dejar vacío para mantener actual):</label>
+      <input type="file" id="editEqLog" accept="image/*" style="width:100%; margin-bottom:15px; color:white;">
+      <button onclick="guardarEdicionEquipo(${id})" class="btn-main">💾 GUARDAR</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+};
+
+window.guardarEdicionEquipo = async function(id) {
+  const nom = document.getElementById('editEqNom').value.trim();
+  const dia = document.getElementById('editEqDia').value;
+  const fileInput = document.getElementById('editEqLog');
+  if (!nom) return alert('El nombre es obligatorio');
+
+  const updates = { nombre: nom, dia_semana: dia };
+  if (fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      updates.logo = await comprimirImagen(e.target.result, 150);
+      await db.updateEquipo(id, updates);
+      alert('✅ Equipo actualizado');
+      document.getElementById('edit-team-overlay')?.remove();
+      mostrarGestionEquipos();
+      await updateSelects();
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  } else {
+    await db.updateEquipo(id, updates);
+    alert('✅ Equipo actualizado');
+    document.getElementById('edit-team-overlay')?.remove();
+    mostrarGestionEquipos();
+    await updateSelects();
+  }
+};
+
+// --- GESTIONAR JUGADORES ---
+window.mostrarGestionJugadores = async function() {
+  const cont = document.getElementById('admin-content');
+  if (!cont) return;
+
+  if (!torneoActual) {
+    cont.innerHTML = '<p style="color:#f97316;">Seleccioná un torneo primero</p>';
+    return;
+  }
+
+  const [jugadores, equipos] = await Promise.all([
+    db.getJugadores(torneoActual),
+    db.getEquipos(torneoActual)
+  ]);
+
+  cont.innerHTML = `
+    <div style="overflow-x:auto;">
+      <h3 style="color:#eab308; margin-bottom:15px;">📋 Gestión de Jugadores (${jugadores.length})</h3>
+      ${jugadores.length === 0 ? '<p style="color:#8b949e;">No hay jugadores registrados</p>' : `
+        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+          <thead><tr style="background:#30363d;">
+            <th style="padding:8px; color:#eab308;">Foto</th>
+            <th style="padding:8px; color:#eab308; text-align:left;">Nombre</th>
+            <th style="padding:8px; color:#eab308;">Pos</th>
+            <th style="padding:8px; color:#eab308;">Equipo(s)</th>
+            <th style="padding:8px; color:#eab308;">⚽</th>
+            <th style="padding:8px; color:#eab308;">⭐</th>
+            <th style="padding:8px; color:#eab308;">🏃</th>
+            <th style="padding:8px; color:#eab308;">Rating</th>
+            <th style="padding:8px; color:#eab308;">Acción</th>
+          </tr></thead>
+          <tbody>${jugadores.map(j => {
+            const eqs = j.equipos?.map(eId => equipos.find(e => e.id === eId)?.nombre).filter(Boolean).join(', ') || '-';
+            return `
+              <tr style="border-bottom:1px solid #30363d;">
+                <td style="padding:8px;"><img src="${j.foto || DEFAULT_AVATAR}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;"></td>
+                <td style="padding:8px; text-align:left;"><a href="#" onclick="mostrarDetalleJugador(${j.id}); return false;" style="color:white;text-decoration:none;" onmouseover="this.style.color='#eab308'" onmouseout="this.style.color='white'">${j.nombre}</a></td>
+                <td style="padding:8px;">${j.posicion || '-'}</td>
+                <td style="padding:8px; font-size:0.75rem;">${eqs}</td>
+                <td style="padding:8px;">${j.goles || 0}</td>
+                <td style="padding:8px;">${j.mvps || 0}</td>
+                <td style="padding:8px;">${j.pj || 0}</td>
+                <td style="padding:8px; font-weight:bold; color:#eab308;">${calcularRating(j)}</td>
+                <td style="padding:8px;">
+                  <button onclick="editarJugador(${j.id})" class="btn-mini" style="background:#3b82f6; color:white; padding:4px 8px; font-size:0.7rem;">✏️</button>
+                  <button onclick="eliminarJugadorAdmin(${j.id})" class="btn-mini" style="background:#ef4444; color:white; padding:4px 8px; font-size:0.7rem;">🗑️</button>
+                </td>
+              </tr>
+            `;
+          }).join('')}</tbody>
+        </table>
+      `}
+    </div>
+  `;
+};
+
+// --- EDITAR JUGADOR ---
+window.editarJugador = async function(id) {
+  const [jugadores, equipos] = await Promise.all([
+    db.getJugadores(torneoActual),
+    db.getEquipos(torneoActual)
+  ]);
+  const j = jugadores.find(x => x.id === id);
+  if (!j) return;
+
+  const eqOpts = equipos.map(e =>
+    `<option value="${e.id}" ${j.equipos?.includes(e.id) ? 'selected' : ''}>${e.nombre}</option>`
+  ).join('');
+
+  const overlay = document.createElement('div');
+  overlay.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center;z-index:1000;';
+  overlay.id = 'edit-player-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  overlay.innerHTML = `
+    <div style="background:#161b22; border:2px solid #eab308; border-radius:12px; padding:30px; max-width:420px; width:90%; position:relative;">
+      <button onclick="this.closest('#edit-player-overlay').remove()" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
+      <h3 style="color:#eab308; margin-bottom:15px;">✏️ Editar Jugador</h3>
+      <label class="label-accent">Nombre:</label>
+      <input type="text" id="editJugNom" value="${j.nombre}" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px;">
+      <div style="display:flex; gap:10px;">
+        <div style="flex:1">
+          <label class="label-accent">Posición:</label>
+          <select id="editJugPos" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px;">
+            <option value="POR" ${j.posicion === 'POR' ? 'selected' : ''}>Portero</option>
+            <option value="DFC" ${j.posicion === 'DFC' ? 'selected' : ''}>Defensa</option>
+            <option value="MC" ${j.posicion === 'MC' ? 'selected' : ''}>Mediocampista</option>
+            <option value="DEL" ${j.posicion === 'DEL' ? 'selected' : ''}>Delantero</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label class="label-accent">Pierna:</label>
+          <select id="editJugPierna" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px;">
+            <option value="R" ${j.pierna === 'R' ? 'selected' : ''}>Diestro</option>
+            <option value="L" ${j.pierna === 'L' ? 'selected' : ''}>Zurdo</option>
+          </select>
+        </div>
+      </div>
+      <label class="label-accent">Equipo:</label>
+      <select id="editJugEq" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px;">
+        <option value="">Sin equipo</option>
+        ${eqOpts}
+      </select>
+      <label class="label-accent">Foto (dejar vacío para mantener):</label>
+      <input type="file" id="editJugFoto" accept="image/*" style="width:100%; margin-bottom:15px; color:white;">
+      <button onclick="guardarEdicionJugador(${id})" class="btn-main">💾 GUARDAR</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+};
+
+window.guardarEdicionJugador = async function(id) {
+  const nom = document.getElementById('editJugNom').value.trim().toUpperCase();
+  const pos = document.getElementById('editJugPos').value;
+  const pierna = document.getElementById('editJugPierna').value;
+  const equipoId = parseInt(document.getElementById('editJugEq').value);
+  const fileInput = document.getElementById('editJugFoto');
+
+  if (!nom) return alert('El nombre es obligatorio');
+
+  const updates = { nombre: nom, posicion: pos, pierna: pierna };
+
+  if (fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      updates.foto = await comprimirImagen(e.target.result);
+      await db.updateJugador(id, updates);
+      // Update team link
+      const currentEquipos = await db.getEquiposJugador(id);
+      if (equipoId) {
+        if (!currentEquipos.includes(equipoId)) {
+          if (currentEquipos.length > 0) {
+            await _supabase.from('jugador_equipo').delete().eq('jugador_id', id);
+          }
+          await db.vincularJugadorEquipo(id, equipoId);
+        }
+      } else if (currentEquipos.length > 0) {
+        await _supabase.from('jugador_equipo').delete().eq('jugador_id', id);
+      }
+      alert('✅ Jugador actualizado');
+      document.getElementById('edit-player-overlay')?.remove();
+      mostrarGestionJugadores();
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  } else {
+    await db.updateJugador(id, updates);
+    const currentEquipos = await db.getEquiposJugador(id);
+    if (equipoId) {
+      if (!currentEquipos.includes(equipoId)) {
+        if (currentEquipos.length > 0) {
+          await _supabase.from('jugador_equipo').delete().eq('jugador_id', id);
+        }
+        await db.vincularJugadorEquipo(id, equipoId);
+      }
+    } else if (currentEquipos.length > 0) {
+      await _supabase.from('jugador_equipo').delete().eq('jugador_id', id);
+    }
+    alert('✅ Jugador actualizado');
+    document.getElementById('edit-player-overlay')?.remove();
+    mostrarGestionJugadores();
+  }
+};
+
+// --- ELIMINAR JUGADOR ---
+window.eliminarJugadorAdmin = async function(id) {
+  const jugadores = await db.getJugadores(torneoActual);
+  const j = jugadores.find(x => x.id === id);
+  if (!j) return;
+  if (!confirm(`¿Eliminar a ${j.nombre}?`)) return;
+
+  // Delete team links first
+  await _supabase.from('jugador_equipo').delete().eq('jugador_id', id);
+  await db.deleteJugador(id);
+  alert('🗑️ Jugador eliminado');
+  mostrarGestionJugadores();
+};
+
+// =====================================================================
+// STEP 7: DETALLE DE JUGADOR (desde FAMA o lista)
+// =====================================================================
+
+window.mostrarDetalleJugador = async function(jugadorId) {
+  const [jugadores, equipos] = await Promise.all([
+    db.getJugadores(torneoActual),
+    db.getEquipos(torneoActual)
+  ]);
+  const j = jugadores.find(x => x.id === jugadorId);
+  if (!j) return;
+
+  const equiposJug = j.equipos?.map(eId => equipos.find(e => e.id === eId)).filter(Boolean) || [];
+  const posMap = { POR: 'Portero', DFC: 'Defensa', MC: 'Mediocampista', DEL: 'Delantero' };
+  const pieMap = { R: 'Diestro', L: 'Zurdo' };
+
+  const overlay = document.createElement('div');
+  overlay.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;justify-content:center;align-items:center;z-index:1000;';
+  overlay.id = 'player-detail-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  overlay.innerHTML = `
+    <div style="background:#161b22; border:2px solid #eab308; border-radius:16px; padding:30px; max-width:480px; width:90%; max-height:85vh; overflow-y:auto; position:relative;">
+      <button onclick="this.closest('#player-detail-overlay').remove()" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
+      <div style="text-align:center; margin-bottom:20px;">
+        <img src="${j.foto || DEFAULT_AVATAR}" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid #eab308; margin-bottom:10px;">
+        <h2 style="color:#eab308; margin:5px 0;">${j.nombre}</h2>
+        <div style="display:flex; justify-content:center; gap:10px; margin:5px 0;">
+          <span style="background:#3b82f6; padding:2px 12px; border-radius:4px; font-size:0.8rem;">${posMap[j.posicion] || j.posicion}</span>
+          <span style="background:#30363d; padding:2px 12px; border-radius:4px; font-size:0.8rem;">${pieMap[j.pierna] || j.pierna}</span>
+        </div>
+        <div style="display:flex; justify-content:center; gap:10px; margin-top:8px;">
+          ${equiposJug.map(eq => `
+            <div style="display:flex; align-items:center; gap:5px; background:#0d1117; padding:4px 12px; border-radius:20px; border:1px solid #30363d;">
+              ${eq.logo ? `<img src="${eq.logo}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;">` : ''}
+              <span style="font-size:0.8rem; color:#b0bcc4;">${eq.nombre}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:20px;">
+        <div style="background:#0d1117; border-radius:8px; padding:12px; text-align:center;">
+          <div style="font-size:1.5rem; font-weight:bold; color:#22c55e;">${j.goles || 0}</div>
+          <div style="font-size:0.7rem; color:#8b949e;">GOLES</div>
+        </div>
+        <div style="background:#0d1117; border-radius:8px; padding:12px; text-align:center;">
+          <div style="font-size:1.5rem; font-weight:bold; color:#3b82f6;">${j.pj || 0}</div>
+          <div style="font-size:0.7rem; color:#8b949e;">PARTIDOS</div>
+        </div>
+        <div style="background:#0d1117; border-radius:8px; padding:12px; text-align:center;">
+          <div style="font-size:1.5rem; font-weight:bold; color:#eab308;">${calcularRating(j)}</div>
+          <div style="font-size:0.7rem; color:#8b949e;">RATING</div>
+        </div>
+        <div style="background:#0d1117; border-radius:8px; padding:12px; text-align:center;">
+          <div style="font-size:1.5rem; font-weight:bold; color:#f97316;">${j.mvps || 0}</div>
+          <div style="font-size:0.7rem; color:#8b949e;">MVP</div>
+        </div>
+        <div style="background:#0d1117; border-radius:8px; padding:12px; text-align:center;">
+          <div style="font-size:1.5rem; font-weight:bold; color:#eab308;">${j.amarillas || 0}</div>
+          <div style="font-size:0.7rem; color:#8b949e;">AMARILLAS</div>
+        </div>
+        <div style="background:#0d1117; border-radius:8px; padding:12px; text-align:center;">
+          <div style="font-size:1.5rem; font-weight:bold; color:#ef4444;">${j.rojas || 0}</div>
+          <div style="font-size:0.7rem; color:#8b949e;">ROJAS</div>
+        </div>
+      </div>
+      <div style="background:#0d1117; border-radius:8px; padding:15px;">
+        <h4 style="color:#eab308; margin:0 0 10px 0;">📊 Estadísticas</h4>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; font-size:0.85rem;">
+          <span style="color:#8b949e;">Goles por partido:</span><span style="color:white; font-weight:bold; text-align:right;">${j.pj > 0 ? (j.goles / j.pj).toFixed(2) : '0.00'}</span>
+          <span style="color:#8b949e;">MVP por partido:</span><span style="color:white; font-weight:bold; text-align:right;">${j.pj > 0 ? (j.mvps / j.pj).toFixed(2) : '0.00'}</span>
+          <span style="color:#8b949e;">Efectividad:</span><span style="color:white; font-weight:bold; text-align:right;">${j.goles > 0 ? ((j.mvps / j.goles) * 100).toFixed(0) : '0'}% MVP</span>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+};
+
+// Patch renderFama to add click handler
+const _renderFamaOriginal = window.renderFama;
+window.renderFama = async function() {
+  await _renderFamaOriginal();
+  // Add click handlers to fama cards
+  document.querySelectorAll('#renderFama .ficha-ea').forEach((card, i) => {
+    card.style.cursor = 'pointer';
+    card.onclick = async () => {
+      const jugadores = await db.getJugadores(torneoActual);
+      const cracks = [...jugadores].sort((a, b) => b.mvps - a.mvps || b.goles - a.goles).slice(0, 12);
+      if (cracks[i]) mostrarDetalleJugador(cracks[i].id);
+    };
+  });
+};

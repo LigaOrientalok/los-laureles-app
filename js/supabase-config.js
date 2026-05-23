@@ -159,6 +159,27 @@ const db = {
     return data || [];
   },
 
+  async updateResultado(id, updates) {
+    const { data, error } = await _supabase.from('resultados').update(updates).eq('id', id).select();
+    this._handleError('Error updating resultado:', error);
+    return data?.[0];
+  },
+
+  async deleteResultado(id) {
+    const { error } = await _supabase.from('resultados').delete().eq('id', id);
+    this._handleError('Error deleting resultado:', error);
+  },
+
+  async deleteGolesByResultado(resultadoId) {
+    const { error } = await _supabase.from('goles').delete().eq('resultado_id', resultadoId);
+    this._handleError('Error deleting goles:', error);
+  },
+
+  async deleteTarjetasByResultado(resultadoId) {
+    const { error } = await _supabase.from('tarjetas').delete().eq('resultado_id', resultadoId);
+    this._handleError('Error deleting tarjetas:', error);
+  },
+
   async createTarjeta(resultadoId, jugadorId, equipoId, tipo, minuto) {
     const { data, error } = await _supabase.from('tarjetas').insert([{ resultado_id: resultadoId, jugador_id: jugadorId, equipo_id: equipoId, tipo, minuto }]).select();
     this._handleError('Error creating tarjeta:', error);

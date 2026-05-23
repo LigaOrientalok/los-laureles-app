@@ -102,12 +102,16 @@ async function renderTablaActual() {
 async function renderFixtureActual() {
   if (!torneoActual) return;
 
-  const [fixture, equipos] = await Promise.all([
+  const [fixture, equipos, resultados] = await Promise.all([
     db.getFixture(torneoActual),
-    db.getEquipos(torneoActual)
+    db.getEquipos(torneoActual),
+    db.getResultados(torneoActual)
   ]);
   const cont = document.getElementById('cont-fixture');
   if (!cont) return;
+
+  const resPorFixture = {};
+  resultados.forEach(r => { if (r.fixture_id) resPorFixture[r.fixture_id] = r; });
 
   const getEqName = (id) => {
     const eq = equipos.find(e => e.id === id);
@@ -126,20 +130,29 @@ async function renderFixtureActual() {
   cont.innerHTML = Object.keys(grupos).map(titulo => `
     <div style="margin-bottom:20px">
       <h3>${titulo}</h3>
-      ${grupos[titulo].map(m => `
-        <div class="fixture-item" style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:#0d1117; border-radius:8px; margin-bottom:10px; border-left:4px solid #eab308;">
+      ${grupos[titulo].map(m => {
+        const res = resPorFixture[m.id];
+        return `
+        <div class="fixture-item" style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:#0d1117; border-radius:8px; margin-bottom:10px; border-left:4px solid ${res ? '#22c55e' : '#eab308'};">
           <span style="font-weight:600; color:#eab308; min-width:50px;">${m.hora}</span>
           <div style="flex:1; text-align:right; font-weight:600;">${getEqName(m.equipo_local_id)}</div>
-          <div style="margin:0 15px; font-size:0.75rem; color:#8b949e;">VS</div>
+          <div style="margin:0 15px; font-size:0.9rem; font-weight:700; color:${res ? '#22c55e' : '#8b949e'};">
+            ${res ? `${res.goles_local} - ${res.goles_visitante}` : 'VS'}
+          </div>
           <div style="flex:1; font-weight:600;">${getEqName(m.equipo_visitante_id)}</div>
           ${admin ? `
             <div style="display:flex; gap:5px; margin-left:10px;">
-              <button onclick="cargarResultadoDeFixture(${m.id})" class="btn-mini" style="background:#22c55e; color:white; padding:4px 10px; font-size:0.75rem;">⚽ Resultado</button>
-              <button onclick="eliminarPartido(${m.id})" class="btn-mini" style="background:#ef4444; color:white; padding:4px 10px; font-size:0.75rem;">🗑️</button>
+              ${res ? `
+                <button onclick="cargarEdicionResultado(${m.id})" class="btn-mini" style="background:#3b82f6; color:white; padding:4px 10px; font-size:0.75rem;">✏️ Editar</button>
+                <button onclick="eliminarResultado(${m.id})" class="btn-mini" style="background:#ef4444; color:white; padding:4px 10px; font-size:0.75rem;">🗑️ Resultado</button>
+              ` : `
+                <button onclick="cargarResultadoDeFixture(${m.id})" class="btn-mini" style="background:#22c55e; color:white; padding:4px 10px; font-size:0.75rem;">⚽ Resultado</button>
+                <button onclick="eliminarPartido(${m.id})" class="btn-mini" style="background:#ef4444; color:white; padding:4px 10px; font-size:0.75rem;">🗑️</button>
+              `}
             </div>
           ` : ''}
-        </div>
-      `).join('')}
+        </div>`;
+      }).join('')}
     </div>
   `).join('');
 }
