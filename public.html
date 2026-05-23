@@ -99,7 +99,7 @@
             const torneos = await db.getTorneos();
             if (torneos.length > 0) {
                 torneoPublico = torneos[0].id;
-                await renderTablaPublica(torneos[0].dia_semana || 'Lunes');
+                await renderTablaPublica('Lunes');
                 await renderFixturePublico();
                 await renderEstadisticasPublicas('');
                 await renderFamaPublico();
@@ -134,9 +134,17 @@
         async function renderFixturePublico() {
             if (!torneoPublico) return;
             
-            const fixture = await db.getFixture(torneoPublico);
+            const [fixture, equipos] = await Promise.all([
+                db.getFixture(torneoPublico),
+                db.getEquipos(torneoPublico)
+            ]);
             const cont = document.getElementById('cont-fixture-publico');
             
+            const getEqName = (id) => {
+                const eq = equipos.find(e => e.id === id);
+                return eq ? eq.nombre : `Equipo ${id}`;
+            };
+
             const grupos = fixture.reduce((acc, m) => {
                 const k = `${m.dia_semana}`;
                 if (!acc[k]) acc[k] = [];
@@ -150,9 +158,9 @@
                     ${grupos[dia].map(m => `
                         <div style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:#0d1117; border-radius:8px; margin-bottom:10px; border-left:4px solid #eab308;">
                             <span style="font-weight:bold;">${m.hora}</span>
-                            <div style="flex:1; text-align:right;">Equipo ${m.equipo_local_id}</div>
+                            <div style="flex:1; text-align:right;">${getEqName(m.equipo_local_id)}</div>
                             <div style="margin:0 15px; font-weight:bold; color:#eab308;">VS</div>
-                            <div style="flex:1;">Equipo ${m.equipo_visitante_id}</div>
+                            <div style="flex:1;">${getEqName(m.equipo_visitante_id)}</div>
                         </div>
                     `).join('')}
                 </div>

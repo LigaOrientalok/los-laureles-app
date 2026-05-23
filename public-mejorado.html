@@ -153,7 +153,16 @@
         async function renderFixturePublico() {
             if (!torneoActualPub) return;
             
-            const fixture = await db.getFixture(torneoActualPub);
+            const [fixture, equipos] = await Promise.all([
+                db.getFixture(torneoActualPub),
+                db.getEquipos(torneoActualPub)
+            ]);
+            
+            const getEqName = (id) => {
+                const eq = equipos.find(e => e.id === id);
+                return eq ? eq.nombre : `Equipo ${id}`;
+            };
+
             const grupos = fixture.reduce((acc, m) => {
                 const k = `${m.dia_semana} - ${m.fecha}`;
                 if (!acc[k]) acc[k] = [];
@@ -167,9 +176,9 @@
                     ${grupos[titulo].map(m => `
                         <div class="fixture-item" style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:#0d1117; border-radius:8px; margin-bottom:10px; border-left:4px solid #eab308;">
                             <span style="color:#b0bcc4; font-weight:bold;">${m.hora}</span>
-                            <div style="flex:1; text-align:right; margin-right:10px; font-weight:bold;">Equipo ${m.equipo_local_id}</div>
+                            <div style="flex:1; text-align:right; margin-right:10px; font-weight:bold;">${getEqName(m.equipo_local_id)}</div>
                             <div style="margin:0 10px; color:#eab308; font-weight:bold;">VS</div>
-                            <div style="flex:1; font-weight:bold;">Equipo ${m.equipo_visitante_id}</div>
+                            <div style="flex:1; font-weight:bold;">${getEqName(m.equipo_visitante_id)}</div>
                         </div>
                     `).join('')}
                 </div>
