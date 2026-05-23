@@ -259,29 +259,41 @@ window.cargarResultadoGlobal = async function() {
   const e2Id = parseInt(document.getElementById('resE2').value);
   const g1 = parseInt(document.getElementById('resG1').value) || 0;
   const g2 = parseInt(document.getElementById('resG2').value) || 0;
+  const mvpId = parseInt(document.getElementById('resMVP').value);
   
-  const e1 = await db.getEquipos(torneoActual).then(e => e.find(x => x.id === e1Id));
-  const e2 = await db.getEquipos(torneoActual).then(e => e.find(x => x.id === e2Id));
+  const [equipos, jugadores, fixture] = await Promise.all([
+    db.getEquipos(torneoActual),
+    db.getJugadores(torneoActual),
+    db.getFixture(torneoActual)
+  ]);
   
+  const e1 = equipos.find(x => x.id === e1Id);
+  const e2 = equipos.find(x => x.id === e2Id);
   if(!e1 || !e2) return alert("Selecciona equipos");
   
-  // Actualizar estadísticas de equipos
+  // Find matching fixture or use hidden field
+  let fiId = parseInt(document.getElementById('resFiId')?.value);
+  if (!fiId) {
+    const match = fixture.find(m => m.equipo_local_id === e1Id && m.equipo_visitante_id === e2Id);
+    if (match) fiId = match.id;
+  }
+  
+  // Create the resultado record
+  const resultado = await db.createResultado(torneoActual, fiId || null, e1Id, e2Id, g1, g2, mvpId || null);
+  if (!resultado) return alert('Error al guardar el resultado');
+  const resId = resultado.id;
+  
+  // Update team stats (sequentially to avoid race conditions)
   const newE1 = { ...e1, pj: e1.pj + 1, gf: e1.gf + g1, gc: e1.gc + g2 };
   const newE2 = { ...e2, pj: e2.pj + 1, gf: e2.gf + g2, gc: e2.gc + g1 };
   
   if(g1 > g2) {
-    newE1.v = e1.v + 1;
-    newE1.pts = e1.pts + 3;
-    newE2.p = e2.p + 1;
+    newE1.v = e1.v + 1; newE1.pts = e1.pts + 3; newE2.p = e2.p + 1;
   } else if(g2 > g1) {
-    newE2.v = e2.v + 1;
-    newE2.pts = e2.pts + 3;
-    newE1.p = e1.p + 1;
+    newE2.v = e2.v + 1; newE2.pts = e2.pts + 3; newE1.p = e1.p + 1;
   } else {
-    newE1.e = e1.e + 1;
-    newE2.e = e2.e + 1;
-    newE1.pts = e1.pts + 1;
-    newE2.pts = e2.pts + 1;
+    newE1.e = e1.e + 1; newE2.e = e2.e + 1;
+    newE1.pts = e1.pts + 1; newE2.pts = e2.pts + 1;
   }
   
   if(g2 === 0) newE1.vallas_invictas = e1.vallas_invictas + 1;
@@ -290,47 +302,53 @@ window.cargarResultadoGlobal = async function() {
   await db.updateEquipo(e1.id, newE1);
   await db.updateEquipo(e2.id, newE2);
   
-  // Registrar goles
-  document.querySelectorAll('.sel-gol-E1, .sel-gol-E2').forEach(async (s) => {
+  // Register goals
+  const golSelectors = document.querySelectorAll('.sel-gol-E1, .sel-gol-E2');
+  const goalPromises = [];
+  golSelectors.forEach((s) => {
     const jugadorId = parseInt(s.value);
-    const jugador = await db.getJugadores(torneoActual).then(j => j.find(x => x.id === jugadorId));
-    if(jugador) {
-      const updatedJ = { ...jugador, goles: jugador.goles + 1, pj: jugador.pj + 1 };
-      await db.updateJugador(jugadorId, updatedJ);
-    }
+    const jugador = jugadores.find(x => x.id === jugadorId);
+    if (!jugador) return;
+    const equipoId = s.classList.contains('sel-gol-E1') ? e1Id : e2Id;
+    goalPromises.push(
+      db.createGol(resId, jugadorId, equipoId, null)
+        .then(() => db.updateJugador(jugadorId, { ...jugador, goles: jugador.goles + 1, pj: jugador.pj + 1 }))
+    );
   });
+  await Promise.all(goalPromises);
   
-  // Registrar tarjetas
-  ['E1', 'E2'].forEach(async (lado) => {
+  // Register cards
+  const cardPromises = [];
+  ['E1', 'E2'].forEach((lado) => {
     const jS = document.querySelectorAll(`.sel-card-j-${lado}`);
     const tS = document.querySelectorAll(`.sel-card-t-${lado}`);
-    
-    jS.forEach(async (s, i) => {
+    const equipoId = lado === 'E1' ? e1Id : e2Id;
+    jS.forEach((s, i) => {
       const jugadorId = parseInt(s.value);
-      const jugador = await db.getJugadores(torneoActual).then(j => j.find(x => x.id === jugadorId));
-      if(jugador) {
-        const updatedJ = { ...jugador };
-        if(tS[i].value === 'A') {
-          updatedJ.amarillas = jugador.amarillas + 1;
-        } else {
-          updatedJ.rojas = jugador.rojas + 1;
-        }
-        await db.updateJugador(jugadorId, updatedJ);
-      }
+      const jugador = jugadores.find(x => x.id === jugadorId);
+      if (!jugador) return;
+      const tipo = tS[i]?.value || 'A';
+      cardPromises.push(
+        db.createTarjeta(resId, jugadorId, equipoId, tipo, null)
+          .then(() => {
+            const upd = { ...jugador };
+            upd[tipo === 'A' ? 'amarillas' : 'rojas'] = (jugador[tipo === 'A' ? 'amarillas' : 'rojas'] || 0) + 1;
+            return db.updateJugador(jugadorId, upd);
+          })
+      );
     });
   });
+  await Promise.all(cardPromises);
   
   // MVP
-  const mvpId = parseInt(document.getElementById('resMVP').value);
-  if(mvpId) {
-    const jugador = await db.getJugadores(torneoActual).then(j => j.find(x => x.id === mvpId));
-    if(jugador) {
-      const updatedJ = { ...jugador, mvps: jugador.mvps + 1 };
-      await db.updateJugador(mvpId, updatedJ);
+  if (mvpId) {
+    const jugador = jugadores.find(x => x.id === mvpId);
+    if (jugador) {
+      await db.updateJugador(mvpId, { ...jugador, mvps: jugador.mvps + 1 });
     }
   }
   
-  alert("✅ ¡Guardado!");
+  alert("✅ ¡Resultado guardado!");
   await recargarDatos();
 };
 
@@ -477,15 +495,16 @@ window.cargarResultadoDeFixture = async function(fixtureId) {
   // Switch to fixture tab and fill the form
   showSec('fixture', document.querySelector('[onclick*="fixture"]'));
   
-  await new Promise(r => setTimeout(r, 200)); // wait for DOM to update
+  await new Promise(r => setTimeout(r, 200));
   
   document.getElementById('resDiaFiltro').value = match.dia_semana;
   await filtrarEquiposPorDia();
-  
   await new Promise(r => setTimeout(r, 100));
   
   document.getElementById('resE1').value = match.equipo_local_id;
   document.getElementById('resE2').value = match.equipo_visitante_id;
+  const fiField = document.getElementById('resFiId');
+  if (fiField) fiField.value = fixtureId;
   await actualizarListasJugadores();
   
   document.getElementById('resG1').value = 0;
