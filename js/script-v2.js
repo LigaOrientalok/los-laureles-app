@@ -363,6 +363,93 @@ function calcularRating(j) {
   media -= ((j.amarillas || 0) * 0.5) + ((j.rojas || 0) * 2.0);
   return Math.min(99, Math.max(10, Math.round(media)));
 }
+// ✅ GESTION DE EQUIPOS
+window.mostrarGestionEquipos = async function() {
+  const cont = document.getElementById('admin-content');
+  if (!cont) return;
+  
+  if (!torneoActual) {
+    cont.innerHTML = '<p style="color:#f97316;">Seleccioná un torneo primero</p>';
+    return;
+  }
+
+  const equipos = await db.getEquipos(torneoActual);
+  const jugadores = await db.getJugadores(torneoActual);
+
+  cont.innerHTML = `
+    <div style="display:grid; grid-template-columns: 1fr 2fr; gap:20px;">
+      <!-- LEFT: Create Team -->
+      <div class="box">
+        <h3 style="color:#eab308; margin-bottom:15px;">➕ Nuevo Equipo</h3>
+        <label class="label-accent">Nombre:</label>
+        <input type="text" id="adNom" placeholder="Nombre del equipo" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px; box-sizing:border-box;">
+        <label class="label-accent">Día:</label>
+        <select id="adDia" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px;">
+          <option>Lunes</option><option>Miercoles</option><option>Jueves</option><option>Viernes</option><option>Sabado</option><option>Domingo</option>
+        </select>
+        <label class="label-accent">Logo:</label>
+        <input type="file" id="adLog" accept="image/*" style="width:100%; margin-bottom:15px; color:white;">
+        <button onclick="guardarEquipo()" class="btn-main" style="width:100%;">✅ CREAR EQUIPO</button>
+      </div>
+
+      <!-- RIGHT: Team List -->
+      <div class="box">
+        <h3 style="color:#eab308; margin-bottom:15px;">📋 Equipos</h3>
+        ${equipos.length === 0 ? '<p style="color:#b0bcc4;">No hay equipos aún</p>' :
+          equipos.map(eq => {
+            const jugsEq = jugadores.filter(j => j.equipos?.includes(eq.id));
+            return \`
+              <div style="background:#0d1117; border-radius:8px; padding:15px; margin-bottom:10px; border-left:4px solid #eab308;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                  <img src="\${eq.logo || ''}" style="width:36px; height:36px; border-radius:50%; object-fit:cover; background:#30363d;" onerror="this.style.display='none'">
+                  <div>
+                    <strong style="color:white; font-size:1rem;">\${eq.nombre}</strong>
+                    <span style="color:#8b949e; font-size:0.8rem; display:block;">\${eq.dia_semana} | PJ: \${eq.pj || 0} | PTS: \${eq.pts || 0}</span>
+                  </div>
+                  <button onclick="eliminarEquipoAdmin(\${eq.id})" style="margin-left:auto; background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:0.8rem;">🗑️</button>
+                </div>
+                \${jugsEq.length > 0 ? \`
+                  <div style="display:flex; flex-wrap:wrap; gap:5px;">
+                    \${jugsEq.map(j => \`
+                      <span style="background:#30363d; padding:2px 8px; border-radius:4px; font-size:0.8rem; color:#b0bcc4;">\${j.nombre}</span>
+                    \`).join('')}
+                  </div>
+                \` : '<p style="color:#8b949e; font-size:0.8rem; margin:0;">Sin jugadores</p>'}
+              </div>
+            \`;
+          }).join('')
+        }
+      </div>
+    </div>
+  `;
+};
+
+window.guardarEquipo = async function() {
+  const nom = document.getElementById('adNom').value.trim();
+  const fileInput = document.getElementById('adLog');
+  if (!nom || !fileInput.files[0]) return alert('Completá nombre y logo');
+  
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const logo = await comprimirImagen(e.target.result, 150);
+    const eq = await db.createEquipo(torneoActual, nom, document.getElementById('adDia').value, logo);
+    if (eq) {
+      alert('✅ Equipo creado');
+      await updateSelects();
+      mostrarGestionEquipos();
+    }
+  };
+  reader.readAsDataURL(fileInput.files[0]);
+};
+
+window.eliminarEquipoAdmin = async function(id) {
+  if (!confirm('¿Eliminar este equipo?')) return;
+  await db.deleteEquipo(id);
+  alert('🗑️ Eliminado');
+  await updateSelects();
+  mostrarGestionEquipos();
+};
+
 // ✅ FUNCIONES DE ADMIN PARA FIXTURE
 window.eliminarPartido = async function(id) {
   if (!confirm('¿Eliminar este partido del fixture?')) return;
