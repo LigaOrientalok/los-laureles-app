@@ -36,6 +36,7 @@
             if (!session) {
                 inicializarAuth(); // ✅ FIX
             } else {
+                window._sessionCached = true;
                 mostrarApp();
             }
         }
@@ -118,7 +119,7 @@
                             <div class="box" style="flex:0 0 320px; text-align:center;">
                                 <h3>Vista Previa</h3>
                                 <div style="background:#0d1117; border-radius:12px; padding:20px; margin-top:10px;">
-                                    <img id="preImg" src="https://via.placeholder.com/150" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid #eab308; margin-bottom:10px;">
+                                    <img id="preImg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect fill='%2330363d' width='150' height='150'/%3E%3Ctext fill='%238b949e' font-family='sans-serif' font-size='14' text-anchor='middle' x='75' y='85'%3ESin Foto%3C/text%3E%3C/svg%3E" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid #eab308; margin-bottom:10px;">
                                     <img id="preLogoEq" src="" style="width:40px; height:40px; border-radius:50%; display:none; margin-bottom:5px;">
                                     <h3 id="preNom" style="color:#eab308; margin:5px 0;">JUGADOR</h3>
                                     <div style="display:flex; justify-content:center; gap:10px; margin:5px 0;">

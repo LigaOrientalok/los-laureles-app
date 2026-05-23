@@ -1,6 +1,7 @@
 // Script Principal actualizado con Supabase
 
-let tempImgJugador = "https://via.placeholder.com/300x300?text=Sin+Foto";
+const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect fill='%2330363d' width='150' height='150'/%3E%3Ctext fill='%238b949e' font-family='sans-serif' font-size='14' text-anchor='middle' x='75' y='85'%3ESin Foto%3C/text%3E%3C/svg%3E";
+let tempImgJugador = DEFAULT_AVATAR;
 
 // Inicialización (se llama desde mostrarApp)
 
@@ -364,15 +365,24 @@ function calcularRating(j) {
 }
 // ✅ CONTROL DE ACCESO ADMIN
 async function accesoAdmin(btn) {
-    const { data: { session } } = await _supabase.auth.getSession();
-
-    // 🔒 NO LOGUEADOaaa
-    if (!session) {
-        alert("🔒 Tenés que iniciar sesión para acceder al ADMIN");
-        inicializarAuth(); // abre el login
+    if (window._sessionCached) {
+        showSec('admin', btn);
         return;
     }
-
-    // ✅ LOGUEADO → PASA
-    showSec('admin', btn);
+    try {
+        const { data: { session } } = await _supabase.auth.getSession();
+        if (!session) {
+            alert("🔒 Tenés que iniciar sesión para acceder al ADMIN");
+            inicializarAuth();
+            return;
+        }
+        window._sessionCached = true;
+        showSec('admin', btn);
+    } catch (e) {
+        if (window.usuarioActual) {
+            showSec('admin', btn);
+            return;
+        }
+        alert("🔒 Error de conexión. Intentalo de nuevo.");
+    }
 }
