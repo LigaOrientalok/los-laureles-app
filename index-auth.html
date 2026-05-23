@@ -37,7 +37,8 @@
                 inicializarAuth();
             } else {
                 window._sessionCached = true;
-                window.esAdmin = (session.user.email === 'bolso2340@gmail.com');
+                const { data: userData } = await _supabase.from('usuarios').select('rol').eq('email', session.user.email).single();
+                window.esAdmin = (userData?.rol === 'admin');
                 mostrarApp();
             }
         }
@@ -68,7 +69,7 @@
             cont.innerHTML = '<p style="color:#b0bcc4;">Cargando usuarios...</p>';
             try {
                 const { data: usuarios, error } = await _supabase.from('usuarios').select('*').order('fecha_registro', { ascending: false });
-                if (error) { cont.innerHTML = '<p style="color:#ef4444;">Error: ' + error.message + ' (código: ' + error.code + ')</p>'; return; }
+                if (error) { cont.innerHTML = '<p style="color:#ef4444;">Error: ' + error.message + '</p>'; return; }
                 cont.innerHTML = `
                     <div style="overflow-x:auto;">
                         <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
