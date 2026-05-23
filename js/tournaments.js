@@ -83,7 +83,10 @@ async function renderTablaActual() {
   tbody.innerHTML = filtrados.map((e, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td style="text-align:left"><img src="${e.logo}" class="mini-logo-table" style="width:28px; height:28px; border-radius:50%; margin-right:8px;">${e.nombre}</td>
+      <td style="text-align:left">
+        <img src="${e.logo}" class="mini-logo-table" style="width:28px; height:28px; border-radius:50%; margin-right:8px;">
+        <a href="#" onclick="mostrarDetalleEquipo(${e.id}); return false;" style="color:white; text-decoration:none; font-weight:600;" onmouseover="this.style.color='#eab308'" onmouseout="this.style.color='white'">${e.nombre}</a>
+      </td>
       <td>${e.pj}</td>
       <td>${e.v}</td>
       <td>${e.e}</td>
