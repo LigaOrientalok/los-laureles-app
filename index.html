@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liga Oriental</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0b0e14;
+            color: #c9d1d9;
+            font-family: sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+        }
+        h1 {
+            color: #eab308;
+            font-size: 2rem;
+        }
+        p {
+            color: #8b949e;
+            margin: 20px 0;
+        }
+        a {
+            color: #3b82f6;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .legacy-badge {
+            display: inline-block;
+            background: #ef4444;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="legacy-badge">VERSIÓN LEGACY</div>
+        <h1>LIGA ORIENTAL</h1>
+        <p>Esta versión antigua con almacenamiento local ha sido reemplazada.</p>
+        <p>Redirigiendo a la nueva versión...</p>
+        <a href="index-v2.html">Ir a la nueva versión</a>
+    </div>
+    <script>setTimeout(function(){ location.href = 'index-v2.html'; }, 3000);</script>
+</body>
+</html>

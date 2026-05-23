@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liga Oriental - Admin</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Oswald:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <script src="js/supabase-config.js"></script>
+    <script src="js/tournaments.js"></script>
+    <script src="js/stats.js"></script>
+    <script src="js/export.js"></script>
+    <script src="js/script-v2.js"></script>
+    <script src="js/auth.js"></script>
+    
+    <script>
+        // ✅ FUNCIÓN PRINCIPAL (FIX)
+        async function cargarApp() {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            if (!session) {
+                inicializarAuth(); // ✅ FIX
+            } else {
+                mostrarApp();
+            }
+        }
+
+        // ✅ PROTECCIÓN ADMIN
+        async function accesoAdmin(btn) {
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (!session) {
+                alert("🔒 Tenés que iniciar sesión");
+                inicializarAuth();
+                return;
+            }
+
+            showSec('admin', btn);
+        }
+
+        function mostrarApp() {
+            document.body.innerHTML = `
+                <header>
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:0 20px;">
+                        <h1>LIGA <span class="accent-text">ORIENTAL</span></h1>
+                        <button onclick="logoutUsuario()" style="background:#ef4444; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🚪 Cerrar Sesión</button>
+                    </div>
+
+                    <div style="display:flex; gap:10px; justify-content:center; margin:10px 0; flex-wrap:wrap;">
+                        <select id="select-torneo" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; flex:1; min-width:200px;"></select>
+                        <button onclick="crearNuevoTorneo()" class="btn-mini" style="background:#3b82f6; color:white;">+ Nuevo Torneo</button>
+                        <button onclick="respaldarDatos()" class="btn-mini" style="background:#22c55e; color:white;">💾 Respaldo</button>
+                    </div>
+
+                    <nav class="nav-main">
+                        <button class="nav-btn active" onclick="showSec('inicio', this)">REGISTRO</button>
+                        <button class="nav-btn" onclick="showSec('tablas', this)">TABLAS</button>
+                        <button class="nav-btn" onclick="showSec('fixture', this)">📅 FIXTURE</button>
+                        <button class="nav-btn" onclick="showSec('stats', this)">📊 STATS</button>
+                        <button class="nav-btn" onclick="showSec('fama', this)">🏆 FAMA</button>
+
+                        <!-- ✅ BOTÓN ADMIN PROTEGIDO -->
+                        <button class="nav-btn admin-btn" onclick="accesoAdmin(this)">⚙️ ADMIN</button>
+                    </nav>
+                </header>
+
+                <main>
+
+                    <!-- ========= REGISTRO ========= -->
+                    <section id="sec-inicio" class="section active">
+                        <div class="registro-container">
+                            <div class="box">
+                                <h2>Registro de Jugador</h2>
+                                <label class="label-accent">CI del Jugador:</label>
+                                <input type="number" id="regCI" placeholder="Cédula de Identidad" oninput="updatePreview()">
+                                <label class="label-accent">Nombre:</label>
+                                <input type="text" id="regNom" placeholder="Nombre completo" oninput="updatePreview()">
+
+                                <div style="display: flex; gap: 10px;">
+                                    <div style="flex:1">
+                                        <label class="label-accent">Posición:</label>
+                                        <select id="regPos" onchange="updatePreview()">
+                                            <option value="POR">Portero</option>
+                                            <option value="DFC">Defensa</option>
+                                            <option value="MC">Mediocampista</option>
+                                            <option value="DEL" selected>Delantero</option>
+                                        </select>
+                                    </div>
+
+                                    <div style="flex:1">
+                                        <label class="label-accent">Pierna:</label>
+                                        <select id="regPierna" onchange="updatePreview()">
+                                            <option value="R">Diestro</option>
+                                            <option value="L">Zurdo</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <label class="label-accent">Equipo:</label>
+                                <select id="regEqSelect" onchange="updatePreview()"></select>
+
+                                <label class="label-accent">Foto:</label>
+                                <input type="file" id="regFoto" accept="image/*" onchange="previewImage(this)">
+
+                                <button class="btn-main" onclick="savePlayer()">VINCULAR / CREAR FICHA</button>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- ========= TABLAS ========= -->
+                    <section id="sec-tablas" class="section">
+                        <div class="box">
+                            <select id="selectDiaTablas" onchange="renderTablaActual()">
+                                <option disabled selected>Elegir Día para Tabla</option>
+                                <option>Lunes</option>
+                                <option>Miercoles</option>
+                                <option>Jueves</option>
+                                <option>Viernes</option>
+                                <option>Sabado</option>
+                                <option>Domingo</option>
+                            </select>
+                        </div>
+
+                        <div id="tabla-oriental" class="box">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Pos</th>
+                                        <th>Equipo</th>
+                                        <th>PJ</th>
+                                        <th>V</th>
+                                        <th>E</th>
+                                        <th>P</th>
+                                        <th>GF</th>
+                                        <th>GC</th>
+                                        <th>DF</th>
+                                        <th>PTS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bodyPos"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- ========= ADMIN ========= -->
+                    <section id="sec-admin" class="section">
+                        <div class="box">
+                            <h3>Panel ADMIN 🔐</h3>
+                            <p>Acceso restringido solo a usuarios autenticados</p>
+                        </div>
+                    </section>
+
+                </main>
+            `;
+
+            setTimeout(async () => {
+                await inicializarTorneos();
+                await updateSelects();
+            }, 100);
+        }
+
+        // ✅ INIT CORRECTO
+        document.addEventListener('DOMContentLoaded', cargarApp);
+
+    </script>
+</body>
+</html>
