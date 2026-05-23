@@ -43,15 +43,18 @@
 
         // ✅ PROTECCIÓN ADMIN
         async function accesoAdmin(btn) {
-            const { data: { session } } = await _supabase.auth.getSession();
-
-            if (!session) {
-                alert("🔒 Tenés que iniciar sesión");
-                inicializarAuth();
-                return;
+            if (window._sessionCached || window.usuarioActual) {
+                showSec('admin', btn);
+            } else {
+                const { data: { session } } = await _supabase.auth.getSession();
+                if (session) {
+                    window._sessionCached = true;
+                    showSec('admin', btn);
+                } else {
+                    alert("🔒 Tenés que iniciar sesión");
+                    inicializarAuth();
+                }
             }
-
-            showSec('admin', btn);
         }
 
         function mostrarApp() {
