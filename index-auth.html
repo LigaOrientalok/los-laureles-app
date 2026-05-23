@@ -34,9 +34,10 @@
             const { data: { session } } = await _supabase.auth.getSession();
             
             if (!session) {
-                inicializarAuth(); // ✅ FIX
+                inicializarAuth();
             } else {
                 window._sessionCached = true;
+                window.esAdmin = true;
                 mostrarApp();
             }
         }
@@ -67,7 +68,7 @@
             cont.innerHTML = '<p style="color:#b0bcc4;">Cargando usuarios...</p>';
             try {
                 const { data: usuarios, error } = await _supabase.from('usuarios').select('*').order('fecha_registro', { ascending: false });
-                if (error) { cont.innerHTML = '<p style="color:#ef4444;">Error al cargar usuarios</p>'; return; }
+                if (error) { cont.innerHTML = '<p style="color:#ef4444;">Error: ' + error.message + ' (código: ' + error.code + ')</p>'; return; }
                 cont.innerHTML = `
                     <div style="overflow-x:auto;">
                         <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
