@@ -12,7 +12,7 @@ async function mostrarPanelAdmin() {
 // Panel de gestión de usuarios
 async function mostrarDashboardUsuarios() {
   if (!usuarioData || usuarioData.rol !== 'admin') {
-    alert('No tienes permisos para acceder aqui');
+    mostrarErrorUsuario('No tienes permisos para acceder aqui');
     return;
   }
 
@@ -97,9 +97,9 @@ async function cambiarRol(usuarioId, nuevoRol) {
     .eq('id', usuarioId);
   
   if (error) {
-    alert('Error al cambiar rol');
+    mostrarErrorUsuario('Error al cambiar rol');
   } else {
-    alert('✅ Rol actualizado');
+    mostrarErrorUsuario('✅ Rol actualizado');
     mostrarDashboardUsuarios();
   }
 }
@@ -118,9 +118,9 @@ async function cambiarEstado(usuarioId, nuevoEstado) {
     .eq('id', usuarioId);
   
   if (error) {
-    alert('Error al cambiar estado');
+    mostrarErrorUsuario('Error al cambiar estado');
   } else {
-    alert('✅ Estado actualizado');
+    mostrarErrorUsuario('✅ Estado actualizado');
     mostrarDashboardUsuarios();
   }
 }
@@ -132,9 +132,9 @@ async function eliminarUsuario(usuarioId, email) {
   const { error } = await _supabase.rpc('eliminar_usuario_auth', { user_id: usuarioId });
   
   if (error) {
-    alert('Error al eliminar usuario: ' + error.message);
+    mostrarErrorUsuario('Error al eliminar usuario: ' + error.message);
   } else {
-    alert('✅ Usuario eliminado (auth + público)');
+    mostrarErrorUsuario('✅ Usuario eliminado (auth + público)');
     mostrarDashboardUsuarios();
   }
 }

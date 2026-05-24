@@ -34,7 +34,7 @@ async function crearNuevoTorneo() {
   if (torneo) {
     torneoActual = torneo.id;
     await inicializarTorneos();
-    alert(`✅ Torneo "${nombre}" creado`);
+    mostrarErrorUsuario(`✅ Torneo "${nombre}" creado`);
   }
 }
 

@@ -53,7 +53,7 @@ function mostrarPanelLogin() {
             <input type="password" id="loginPassword" placeholder="Contraseña segura" style="width:100%; padding:12px; border-radius:8px; border:1px solid #30363d; background:#0d1117; color:white; box-sizing:border-box; font-size:1rem;">
           </div>
           
-          <button onclick="loginUsuario()" style="width:100%; padding:14px; background:#eab308; color:black; font-weight:900; border:none; border-radius:8px; cursor:pointer; font-size:1rem; text-transform:uppercase; margin-bottom:15px; transition:0.3s;" onmouseover="this.style.background='#d4a403'" onmouseout="this.style.background='#eab308'">Iniciar Sesión</button>
+          <button onclick="loginUsuario(this)" style="width:100%; padding:14px; background:#eab308; color:black; font-weight:900; border:none; border-radius:8px; cursor:pointer; font-size:1rem; text-transform:uppercase; margin-bottom:15px; transition:0.3s;" onmouseover="this.style.background='#d4a403'" onmouseout="this.style.background='#eab308'">Iniciar Sesión</button>
           
           <p style="text-align:center; margin-top:-5px;">
             <a href="#" onclick="resetPassword(); return false;" style="color:#3b82f6; font-size:0.85rem; text-decoration:none;">¿Olvidaste tu contraseña?</a>
@@ -105,7 +105,7 @@ function mostrarFormRegistro() {
           <input type="password" id="regPassword2" placeholder="Repite tu contraseña" style="width:100%; padding:12px; border-radius:8px; border:1px solid #30363d; background:#0d1117; color:white; box-sizing:border-box;">
         </div>
         
-        <button onclick="registrarUsuario()" style="width:100%; padding:14px; background:#22c55e; color:white; font-weight:900; border:none; border-radius:8px; cursor:pointer; font-size:1rem; text-transform:uppercase; margin-bottom:10px;" onmouseover="this.style.background='#16a34a'" onmouseout="this.style.background='#22c55e'">Registrarse</button>
+        <button onclick="registrarUsuario(this)" style="width:100%; padding:14px; background:#22c55e; color:white; font-weight:900; border:none; border-radius:8px; cursor:pointer; font-size:1rem; text-transform:uppercase; margin-bottom:10px;" onmouseover="this.style.background='#16a34a'" onmouseout="this.style.background='#22c55e'">Registrarse</button>
         
         <button onclick="inicializarAuth()" style="width:100%; padding:14px; background:#30363d; color:white; font-weight:900; border:none; border-radius:8px; cursor:pointer; font-size:1rem; text-transform:uppercase;" onmouseover="this.style.background='#3d444d'" onmouseout="this.style.background='#30363d'">Volver</button>
         
@@ -116,7 +116,7 @@ function mostrarFormRegistro() {
 }
 
 // Registrar con email
-async function registrarUsuario() {
+async function registrarUsuario(btn) {
   const email = document.getElementById('regEmail').value.trim();
   const password = document.getElementById('regPassword').value;
   const password2 = document.getElementById('regPassword2').value;
@@ -136,6 +136,7 @@ async function registrarUsuario() {
     return;
   }
   
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Registrando...'; }
   try {
     const { data, error } = await _supabase.auth.signUp({
       email,
@@ -147,32 +148,23 @@ async function registrarUsuario() {
       return;
     }
     
-    // Manually insert into usuarios table (bypasses trigger issues)
     if (data?.user) {
-      const { error: insertError } = await _supabase.from('usuarios').upsert({
-        id: data.user.id,
-        email: data.user.email,
-        rol: 'usuario',
-        estado: 'pendiente',
-        fecha_registro: new Date().toISOString()
+      await _supabase.from('usuarios').upsert({
+        id: data.user.id, email: data.user.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
       });
-      
-      if (insertError) {
-        console.error('Error insertando usuario:', insertError);
-      }
     }
     
     mostrarErrorReg('✅ Cuenta creada. Revisa tu email para confirmar.');
-    setTimeout(() => {
-      inicializarAuth();
-    }, 2000);
+    setTimeout(() => inicializarAuth(), 2000);
   } catch (e) {
     mostrarErrorReg('Error: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Registrarse'; }
   }
 }
 
 // Login con email
-async function loginUsuario() {
+async function loginUsuario(btn) {
   const email = document.getElementById('loginEmail').value.trim();
   const password = document.getElementById('loginPassword').value;
   
@@ -181,6 +173,7 @@ async function loginUsuario() {
     return;
   }
   
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Ingresando...'; }
   try {
     const { data, error } = await _supabase.auth.signInWithPassword({
       email,
@@ -191,10 +184,15 @@ async function loginUsuario() {
       mostrarError('Email o contraseña incorrectos');
     } else {
       usuarioActual = data.user;
+      await _supabase.from('usuarios').upsert({
+        id: data.user.id, email: data.user.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
+      });
       inicializarAuth();
     }
   } catch (e) {
     mostrarError('Error: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Iniciar Sesión'; }
   }
 }
 

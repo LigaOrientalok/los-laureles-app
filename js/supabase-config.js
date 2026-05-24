@@ -7,14 +7,31 @@ const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Notificaciones para el usuario
 function mostrarErrorUsuario(mensaje) {
-  const existing = document.getElementById('toast-error');
+  const existing = document.getElementById('toast-notif');
   if (existing) existing.remove();
   const toast = document.createElement('div');
-  toast.id = 'toast-error';
-  toast.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;background:#ef4444;color:white;padding:16px 24px;border-radius:8px;font-family:sans-serif;font-size:0.9rem;box-shadow:0 8px 30px rgba(0,0,0,0.5);max-width:400px;animation:slideIn 0.3s ease;';
+  toast.id = 'toast-notif';
+  const isSuccess = mensaje.includes('✅') || mensaje.includes('🗑️') || mensaje.toLowerCase().includes('correcto') || mensaje.toLowerCase().includes('guardado');
+  toast.style.cssText = `position:fixed;top:20px;right:20px;z-index:9999;${isSuccess ? 'background:#22c55e;' : 'background:#ef4444;'}color:white;padding:16px 24px;border-radius:8px;font-family:sans-serif;font-size:0.9rem;box-shadow:0 8px 30px rgba(0,0,0,0.5);max-width:400px;animation:slideIn 0.3s ease;`;
   toast.textContent = mensaje;
   document.body.appendChild(toast);
   setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s'; setTimeout(() => toast.remove(), 500); }, 5000);
+}
+
+// Loading state helper
+async function conLoading(btnSelector, textoAlternativo, fn) {
+  const btn = typeof btnSelector === 'string' ? document.querySelector(btnSelector) : btnSelector;
+  if (!btn) return fn();
+  const original = btn.textContent || btn.innerText;
+  const disabled = btn.disabled;
+  btn.disabled = true;
+  btn.textContent = textoAlternativo || '⏳ Procesando...';
+  try {
+    return await fn();
+  } finally {
+    btn.disabled = disabled;
+    btn.textContent = original;
+  }
 }
 
 // Funciones de utilidad

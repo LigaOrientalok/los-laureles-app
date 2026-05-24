@@ -1,0 +1,266 @@
+// Template compartido para index-auth.html e index-v2.html
+
+async function mostrarGestionUsuarios() {
+  const cont = document.getElementById('admin-content');
+  if (!cont) return;
+  cont.innerHTML = '<p style="color:#b0bcc4;">Cargando usuarios...</p>';
+  try {
+    const { data: usuarios, error } = await _supabase.from('usuarios').select('*').order('fecha_registro', { ascending: false });
+    if (error) { cont.innerHTML = '<p style="color:#ef4444;">Error: ' + error.message + '</p>'; return; }
+
+    const statsHtml = `
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:15px;">
+        <div class="box" style="text-align:center; padding:10px;">
+          <h3 style="color:#3b82f6; font-size:1.3rem; margin:0;">${usuarios.length}</h3>
+          <p style="color:#b0bcc4; margin:5px 0 0; font-size:0.8rem;">Total</p>
+        </div>
+        <div class="box" style="text-align:center; padding:10px;">
+          <h3 style="color:#22c55e; font-size:1.3rem; margin:0;">${usuarios.filter(u => u.estado === 'aprobado').length}</h3>
+          <p style="color:#b0bcc4; margin:5px 0 0; font-size:0.8rem;">Aprobados</p>
+        </div>
+        <div class="box" style="text-align:center; padding:10px;">
+          <h3 style="color:#f97316; font-size:1.3rem; margin:0;">${usuarios.filter(u => u.estado === 'pendiente').length}</h3>
+          <p style="color:#b0bcc4; margin:5px 0 0; font-size:0.8rem;">Pendientes</p>
+        </div>
+      </div>`;
+
+    cont.innerHTML = statsHtml + `
+      <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+          <thead><tr style="background:#30363d;">
+            <th style="padding:8px; color:#eab308; text-align:left;">Email</th>
+            <th style="padding:8px; color:#eab308; text-align:center;">Rol</th>
+            <th style="padding:8px; color:#eab308; text-align:center;">Estado</th>
+            <th style="padding:8px; color:#eab308; text-align:center;">Acciones</th>
+          </tr></thead>
+          <tbody>${usuarios.map(u => `
+            <tr style="border-bottom:1px solid #30363d;">
+              <td style="padding:8px;">${escapeHtml(u.email)}</td>
+              <td style="padding:8px; text-align:center;">
+                <select onchange="cambiarRol('${u.id}', this.value)" style="padding:4px; background:#0d1117; color:white; border:1px solid #30363d; border-radius:4px; font-size:0.8rem;">
+                  <option value="usuario" ${u.rol === 'usuario' ? 'selected' : ''}>Usuario</option>
+                  <option value="arbitro" ${u.rol === 'arbitro' ? 'selected' : ''}>Árbitro</option>
+                  <option value="admin" ${u.rol === 'admin' ? 'selected' : ''}>Admin</option>
+                </select>
+              </td>
+              <td style="padding:8px; text-align:center;">
+                <select onchange="cambiarEstado('${u.id}', this.value)" style="padding:4px; background:#0d1117; color:white; border:1px solid #30363d; border-radius:4px; font-size:0.8rem;">
+                  <option value="pendiente" ${u.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                  <option value="aprobado" ${u.estado === 'aprobado' ? 'selected' : ''}>Aprobado</option>
+                  <option value="rechazado" ${u.estado === 'rechazado' ? 'selected' : ''}>Rechazado</option>
+                </select>
+              </td>
+              <td style="padding:8px; text-align:center;">
+                <button onclick="eliminarUsuario(this.dataset.uid, this.dataset.uemail)" data-uid="${u.id}" data-uemail="${escapeHtml(u.email)}" style="background:#ef4444; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem;">Eliminar</button>
+              </td>
+            </tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+  } catch (e) {
+    cont.innerHTML = '<p style="color:#ef4444;">Error de conexión</p>';
+  }
+}
+
+function mostrarApp() {
+  const app = document.getElementById('app');
+  if (!app) return;
+  app.innerHTML = `
+    <header>
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:0 20px;">
+        <h1>LIGA <span class="accent-text">ORIENTAL</span></h1>
+        <button onclick="logoutUsuario()" style="background:#ef4444; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🚪 Cerrar Sesión</button>
+      </div>
+
+      <div style="display:flex; gap:10px; justify-content:center; margin:10px 0; flex-wrap:wrap;">
+        <select id="select-torneo" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; flex:1; min-width:200px;"></select>
+        <button onclick="crearNuevoTorneo()" class="admin-only btn-mini" style="background:#3b82f6; color:white;">+ Nuevo Torneo</button>
+        <button onclick="respaldarDatos()" class="admin-only btn-mini" style="background:#22c55e; color:white;">💾 Respaldo</button>
+        <button onclick="exportarJSON(torneoActual)" class="admin-only btn-mini" style="background:#3b82f6; color:white;">📄 JSON</button>
+        <button onclick="exportarCSV(torneoActual)" class="admin-only btn-mini" style="background:#a855f7; color:white;">📊 CSV</button>
+        <button onclick="exportarPDF(torneoActual)" class="admin-only btn-mini" style="background:#f97316; color:white;">📑 PDF</button>
+      </div>
+
+      <nav class="nav-main">
+        <button class="nav-btn active" onclick="showSec('inicio', this)">REGISTRO</button>
+        <button class="nav-btn" onclick="showSec('tablas', this)">TABLAS</button>
+        <button class="nav-btn" onclick="showSec('fixture', this)">📅 FIXTURE</button>
+        <button class="nav-btn" onclick="showSec('stats', this)">📊 STATS</button>
+        <button class="nav-btn" onclick="showSec('fama', this)">🏆 FAMA</button>
+        <button class="nav-btn admin-btn" onclick="accesoAdmin(this)">⚙️ ADMIN</button>
+      </nav>
+    </header>
+
+    <main>
+      <section id="sec-inicio" class="section active">
+        <div class="registro-container" style="display:flex; gap:20px; flex-wrap:wrap;">
+          <div class="box" style="flex:1; min-width:300px;">
+            <h2>Registro de Jugador</h2>
+            <label class="label-accent">CI del Jugador:</label>
+            <input type="number" id="regCI" placeholder="Cédula de Identidad" oninput="updatePreview()">
+            <label class="label-accent">Nombre:</label>
+            <input type="text" id="regNom" placeholder="Nombre completo" oninput="updatePreview()">
+            <div style="display: flex; gap: 10px;">
+              <div style="flex:1">
+                <label class="label-accent">Posición:</label>
+                <select id="regPos" onchange="updatePreview()">
+                  <option value="POR">Portero</option>
+                  <option value="DFC">Defensa</option>
+                  <option value="MC">Mediocampista</option>
+                  <option value="DEL" selected>Delantero</option>
+                </select>
+              </div>
+              <div style="flex:1">
+                <label class="label-accent">Pierna:</label>
+                <select id="regPierna" onchange="updatePreview()">
+                  <option value="R">Diestro</option>
+                  <option value="L">Zurdo</option>
+                </select>
+              </div>
+            </div>
+            <label class="label-accent">Equipo:</label>
+            <select id="regEqSelect" onchange="updatePreview()"></select>
+            <label class="label-accent">Foto:</label>
+            <input type="file" id="regFoto" accept="image/*" onchange="previewImage(this)">
+            <button class="btn-main" onclick="savePlayer(this)">VINCULAR / CREAR FICHA</button>
+          </div>
+
+          <div class="box" style="flex:0 0 320px; text-align:center;">
+            <h3>Vista Previa</h3>
+            <div style="background:#0d1117; border-radius:12px; padding:20px; margin-top:10px;">
+              <img id="preImg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect fill='%2330363d' width='150' height='150'/%3E%3Ctext fill='%238b949e' font-family='sans-serif' font-size='14' text-anchor='middle' x='75' y='85'%3ESin Foto%3C/text%3E%3C/svg%3E" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid #eab308; margin-bottom:10px;">
+              <img id="preLogoEq" src="" style="width:40px; height:40px; border-radius:50%; display:none; margin-bottom:5px;">
+              <h3 id="preNom" style="color:#eab308; margin:5px 0;">JUGADOR</h3>
+              <div style="display:flex; justify-content:center; gap:10px; margin:5px 0;">
+                <span id="prePos" style="background:#3b82f6; padding:2px 10px; border-radius:4px; font-size:0.8rem;">POR</span>
+                <span id="prePie" style="background:#30363d; padding:2px 10px; border-radius:4px; font-size:0.8rem;">R</span>
+              </div>
+              <div style="display:flex; justify-content:center; gap:20px; margin:10px 0; color:#b0bcc4; font-size:0.85rem;">
+                <span>⚽ Goles: <b id="preGoles" style="color:#22c55e;">0</b></span>
+                <span>🏃 PJ: <b id="prePJ" style="color:#3b82f6;">0</b></span>
+              </div>
+              <div style="font-size:1.5rem; font-weight:900; color:#eab308;">
+                Rating: <span id="preMedia">60</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="sec-tablas" class="section">
+        <div class="box">
+          <select id="selectDiaTablas" onchange="renderTablaActual()">
+            <option disabled selected>Elegir Día para Tabla</option>
+            <option>Lunes</option>
+            <option value="Miercoles">Miércoles</option>
+            <option>Jueves</option>
+            <option>Viernes</option>
+            <option value="Sabado">Sábado</option>
+            <option>Domingo</option>
+          </select>
+        </div>
+        <div id="tabla-oriental" class="box">
+          <table>
+            <thead>
+              <tr>
+                <th>Pos</th>
+                <th>Equipo</th>
+                <th>PJ</th>
+                <th>V</th>
+                <th>E</th>
+                <th>P</th>
+                <th>GF</th>
+                <th>GC</th>
+                <th>DF</th>
+                <th>PTS</th>
+              </tr>
+            </thead>
+            <tbody id="bodyPos"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="sec-fixture" class="section">
+        <div class="admin-only box">
+          <h3>📅 Generar Fixture</h3>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+            <div><label class="label-accent">Día:</label><select id="fixDiaGen"><option>Lunes</option><option value="Miercoles">Miércoles</option><option>Jueves</option><option>Viernes</option><option value="Sabado">Sábado</option><option>Domingo</option></select></div>
+            <div><label class="label-accent">Hora inicio:</label><input type="time" id="fixHoraInicio" value="20:00" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;"></div>
+            <div><label class="label-accent">Duración (min):</label><input type="number" id="fixDuracion" value="30" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; width:80px;"></div>
+            <button onclick="generarFixtureAuto(this)" class="btn-mini" style="background:#22c55e; color:white;">Generar Fixture</button>
+          </div>
+        </div>
+
+        <div class="box">
+          <h3>📋 Fixture</h3>
+          <div id="cont-fixture"></div>
+        </div>
+
+        <div class="admin-only box">
+          <h3>⚽ Cargar Resultado</h3>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <div><label class="label-accent">Día:</label><select id="resDiaFiltro" onchange="filtrarEquiposPorDia()"><option>Lunes</option><option value="Miercoles">Miércoles</option><option>Jueves</option><option>Viernes</option><option value="Sabado">Sábado</option><option>Domingo</option></select></div>
+            <div><label class="label-accent">Local:</label><select id="resE1" onchange="actualizarListasJugadores()"></select></div>
+            <div><label class="label-accent">Visitante:</label><select id="resE2" onchange="actualizarListasJugadores()"></select></div>
+            <div><label class="label-accent">Goles Local:</label><input type="number" id="resG1" value="0" min="0" style="width:60px; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;" onchange="generarInputsGoles('E1')"></div>
+            <div><label class="label-accent">Goles Visit:</label><input type="number" id="resG2" value="0" min="0" style="width:60px; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;" onchange="generarInputsGoles('E2')"></div>
+            <div><label class="label-accent">MVP:</label><select id="resMVP"></select><input type="hidden" id="resFiId"></div>
+          </div>
+          <div id="contGolesE1" style="margin-top:10px;"></div>
+          <div id="contGolesE2" style="margin-top:10px;"></div>
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <button onclick="agregarInputTarjeta('E1')" class="btn-mini" style="background:#f97316; color:white;">+ Tarjeta Local</button>
+            <button onclick="agregarInputTarjeta('E2')" class="btn-mini" style="background:#f97316; color:white;">+ Tarjeta Visit</button>
+          </div>
+          <div id="contCardsE1" style="margin-top:5px;"></div>
+          <div id="contCardsE2" style="margin-top:5px;"></div>
+          <button onclick="cargarResultadoGlobal()" class="btn-main" style="margin-top:15px;">✅ GUARDAR RESULTADO</button>
+        </div>
+      </section>
+
+      <section id="sec-stats" class="section">
+        <div class="box">
+          <h3>📊 Estadísticas</h3>
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap:20px;">
+            <div><h4 style="color:#eab308;">Top Goleadores</h4><canvas id="chart-goleadores" style="max-height:300px;"></canvas></div>
+            <div><h4 style="color:#eab308;">Ranking Equipos</h4><canvas id="chart-equipos" style="max-height:300px;"></canvas></div>
+            <div style="grid-column:1/-1;"><h4 style="color:#eab308;">Evolución</h4><canvas id="chart-evolucion" style="max-height:250px;"></canvas></div>
+          </div>
+        </div>
+        <div class="box">
+          <h4 style="color:#eab308;">Tabla de Goleadores</h4>
+          <div id="tabla-stats-avanzadas"></div>
+        </div>
+      </section>
+
+      <section id="sec-fama" class="section">
+        <div class="box">
+          <h3>🏆 SALÓN DE LA FAMA</h3>
+          <div id="renderFama" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:20px;"></div>
+        </div>
+      </section>
+
+      <section id="sec-admin" class="section">
+        <div class="box">
+          <h3>Panel ADMIN 🔐</h3>
+          <p style="color:#22c55e;">✅ Sesión iniciada como <strong id="admin-email"></strong></p>
+          <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap;">
+            <button onclick="mostrarGestionUsuarios()" class="btn-mini" style="background:#3b82f6; color:white;">📄 Usuarios</button>
+            <button onclick="mostrarGestionJugadores()" class="btn-mini" style="background:#a855f7; color:white;">👤 Jugadores</button>
+            <button onclick="mostrarGestionEquipos()" class="btn-mini" style="background:#22c55e; color:white;">⚽ Equipos</button>
+          </div>
+          <div id="admin-content" style="margin-top:15px;"></div>
+        </div>
+      </section>
+    </main>
+  `;
+
+  if (window.esAdmin !== true) {
+    document.querySelectorAll('.admin-only').forEach(el => el.remove());
+    document.querySelectorAll('.admin-btn').forEach(el => el.remove());
+  }
+
+  setTimeout(async () => {
+    await inicializarTorneos();
+    await updateSelects();
+  }, 100);
+}

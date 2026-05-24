@@ -176,5 +176,5 @@ async function respaldarDatos() {
 
   const json = JSON.stringify(datosCompletos, null, 2);
   descargarArchivo(json, `respaldo-liga-oriental-${new Date().getTime()}.json`, 'application/json');
-  alert('✅ Respaldo completado');
+  mostrarErrorUsuario('✅ Respaldo completado');
 }

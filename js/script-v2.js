@@ -89,109 +89,114 @@ window.updatePreview = async function() {
   }
 };
 
-window.savePlayer = async function() {
-  if (!torneoActual) return alert('Selecciona un torneo');
+window.savePlayer = async function(btn) {
+  if (!torneoActual) return mostrarErrorUsuario('Selecciona un torneo');
   
   const ci = document.getElementById('regCI').value.trim();
   const nom = document.getElementById('regNom').value.trim().toUpperCase();
   const equipoId = parseInt(document.getElementById('regEqSelect').value);
-  
-  if(!ci || !nom || !equipoId) return alert("Datos incompletos");
-  
-  const jugadores = await db.getJugadores(torneoActual);
-  let exist = jugadores.find(j => j.ci === ci);
-  
-  if(exist) {
-    const equiposJugador = await db.getEquiposJugador(exist.id);
-    if(!equiposJugador.includes(equipoId)) {
-      await db.vincularJugadorEquipo(exist.id, equipoId);
-      alert("✅ Vinculado");
+
+  if(!ci || !nom || !equipoId) return mostrarErrorUsuario("Datos incompletos");
+
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Guardando...'; }
+  try {
+    const jugadores = await db.getJugadores(torneoActual);
+    let exist = jugadores.find(j => j.ci === ci);
+    
+    if(exist) {
+      const equiposJugador = await db.getEquiposJugador(exist.id);
+      if(!equiposJugador.includes(equipoId)) {
+        await db.vincularJugadorEquipo(exist.id, equipoId);
+        mostrarErrorUsuario("✅ Vinculado");
+      } else {
+        mostrarErrorUsuario("Ya registrado");
+      }
     } else {
-      alert("Ya registrado");
+      const nuevoJugador = await db.createJugador(
+        torneoActual,
+        ci,
+        nom,
+        document.getElementById('regPos').value,
+        document.getElementById('regPierna').value,
+        tempImgJugador
+      );
+      if(nuevoJugador) {
+        await db.vincularJugadorEquipo(nuevoJugador.id, equipoId);
+        mostrarErrorUsuario("✅ Jugador Creado");
+      }
     }
-  } else {
-    const nuevoJugador = await db.createJugador(
-      torneoActual,
-      ci,
-      nom,
-      document.getElementById('regPos').value,
-      document.getElementById('regPierna').value,
-      tempImgJugador
-    );
-    if(nuevoJugador) {
-      await db.vincularJugadorEquipo(nuevoJugador.id, equipoId);
-      alert("✅ Jugador Creado");
-    }
+    updatePreview();
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'VINCULAR / CREAR FICHA'; }
   }
-  
-  updatePreview();
 };
 
-window.addEq = async function() {
-  if (!torneoActual) return alert('Selecciona un torneo');
+window.addEq = async function(btn) {
+  if (!torneoActual) return mostrarErrorUsuario('Selecciona un torneo');
   
   const nom = document.getElementById('adNom').value.trim();
   const fileInput = document.getElementById('adLog');
   
-  if(!nom || !fileInput.files[0]) return alert("Faltan datos");
+  if(!nom || !fileInput.files[0]) return mostrarErrorUsuario("Faltan datos");
   
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Creando...'; }
   const reader = new FileReader();
   reader.onload = async (e) => {
     const logo = await comprimirImagen(e.target.result, 150);
-    const equipo = await db.createEquipo(
-      torneoActual,
-      nom,
-      document.getElementById('adDia').value,
-      logo
-    );
+    const equipo = await db.createEquipo(torneoActual, nom, document.getElementById('adDia').value, logo);
     if(equipo) {
-      alert("✅ Equipo Creado");
+      mostrarErrorUsuario("✅ Equipo Creado");
       await updateSelects();
     }
+    if (btn) { btn.disabled = false; btn.textContent = '➕ Agregar'; }
   };
   reader.readAsDataURL(fileInput.files[0]);
 };
+  reader.readAsDataURL(fileInput.files[0]);
+};
 
-window.generarFixtureAuto = async function() {
-  if (!torneoActual) return alert('Selecciona un torneo');
+window.generarFixtureAuto = async function(btn) {
+  if (!torneoActual) return mostrarErrorUsuario('Selecciona un torneo');
   
-  const dia = document.getElementById('fixDiaGen').value;
-  const horaInicio = document.getElementById('fixHoraInicio').value;
-  const duracion = parseInt(document.getElementById('fixDuracion').value);
-  
-  const equipos = await db.getEquipos(torneoActual);
-  let equiposDia = equipos.filter(e => e.dia_semana === dia).map(e => e.nombre);
-  
-  if (equiposDia.length < 2) return alert("Necesitas más equipos");
-  if (equiposDia.length % 2 !== 0) equiposDia.push("DESCANSA");
-  
-  const numE = equiposDia.length;
-  for (let r = 0; r < numE - 1; r++) {
-    let fechaH = new Date(`${new Date().getFullYear()}-01-01T${horaInicio}:00`);
-    for (let p = 0; p < numE / 2; p++) {
-      const local = equiposDia[p];
-      const visitante = equiposDia[numE - 1 - p];
-      if (local !== "DESCANSA" && visitante !== "DESCANSA") {
-        const localEq = equipos.find(e => e.nombre === local);
-        const visitanteEq = equipos.find(e => e.nombre === visitante);
-        if(localEq && visitanteEq) {
-          await db.createFixture(
-            torneoActual,
-            dia,
-            `Fecha ${r + 1}`,
-            fechaH.toTimeString().substring(0, 5),
-            localEq.id,
-            visitanteEq.id
-          );
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando...'; }
+  try {
+    const dia = document.getElementById('fixDiaGen').value;
+    const horaInicio = document.getElementById('fixHoraInicio').value;
+    const duracion = parseInt(document.getElementById('fixDuracion').value);
+    
+    const equipos = await db.getEquipos(torneoActual);
+    let equiposDia = equipos.filter(e => e.dia_semana === dia).map(e => e.nombre);
+    
+    if (equiposDia.length < 2) return mostrarErrorUsuario("Necesitas más equipos");
+    if (equiposDia.length % 2 !== 0) equiposDia.push("DESCANSA");
+    
+    const numE = equiposDia.length;
+    for (let r = 0; r < numE - 1; r++) {
+      let fechaH = new Date(`${new Date().getFullYear()}-01-01T${horaInicio}:00`);
+      for (let p = 0; p < numE / 2; p++) {
+        const local = equiposDia[p];
+        const visitante = equiposDia[numE - 1 - p];
+        if (local !== "DESCANSA" && visitante !== "DESCANSA") {
+          const localEq = equipos.find(e => e.nombre === local);
+          const visitanteEq = equipos.find(e => e.nombre === visitante);
+          if(localEq && visitanteEq) {
+            await db.createFixture(
+              torneoActual, dia, `Fecha ${r + 1}`,
+              fechaH.toTimeString().substring(0, 5),
+              localEq.id, visitanteEq.id
+            );
+          }
+          fechaH.setMinutes(fechaH.getMinutes() + duracion);
         }
-        fechaH.setMinutes(fechaH.getMinutes() + duracion);
       }
+      equiposDia.splice(1, 0, equiposDia.pop());
     }
-    equiposDia.splice(1, 0, equiposDia.pop());
+    
+    mostrarErrorUsuario("✅ Fixture Generado");
+    await renderFixtureActual();
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Generar Fixture'; }
   }
-  
-  alert("✅ Fixture Generado");
-  await renderFixtureActual();
 };
 
 window.filtrarEquiposPorDia = async function() {
@@ -269,7 +274,7 @@ window.cargarResultadoGlobal = async function() {
   
   const e1 = equipos.find(x => x.id === e1Id);
   const e2 = equipos.find(x => x.id === e2Id);
-  if(!e1 || !e2) return alert("Selecciona equipos");
+  if(!e1 || !e2) return mostrarErrorUsuario("Selecciona equipos");
   
   // Find matching fixture or use hidden field
   let fiId = parseInt(document.getElementById('resFiId')?.value);
@@ -280,7 +285,7 @@ window.cargarResultadoGlobal = async function() {
   
   // Create the resultado record
   const resultado = await db.createResultado(torneoActual, fiId || null, e1Id, e2Id, g1, g2, mvpId || null);
-  if (!resultado) return alert('Error al guardar el resultado');
+  if (!resultado) return mostrarErrorUsuario('Error al guardar el resultado');
   const resId = resultado.id;
   
   // Update team stats (sequentially to avoid race conditions)
@@ -348,7 +353,7 @@ window.cargarResultadoGlobal = async function() {
     }
   }
   
-  alert("✅ ¡Resultado guardado!");
+  mostrarErrorUsuario("✅ ¡Resultado guardado!");
   await recargarDatos();
 };
 
@@ -456,25 +461,32 @@ window.mostrarGestionEquipos = async function() {
 window.guardarEquipo = async function() {
   const nom = document.getElementById('adNom').value.trim();
   const fileInput = document.getElementById('adLog');
-  if (!nom || !fileInput.files[0]) return alert('Completá nombre y logo');
+  if (!nom || !fileInput.files[0]) return mostrarErrorUsuario('Completá nombre y logo');
   
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const logo = await comprimirImagen(e.target.result, 150);
-    const eq = await db.createEquipo(torneoActual, nom, document.getElementById('adDia').value, logo);
-    if (eq) {
-      alert('✅ Equipo creado');
-      await updateSelects();
-      mostrarGestionEquipos();
-    }
-  };
-  reader.readAsDataURL(fileInput.files[0]);
+  const btn = document.querySelector('[onclick*="guardarEquipo"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Creando...'; }
+  try {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const logo = await comprimirImagen(e.target.result, 150);
+      const eq = await db.createEquipo(torneoActual, nom, document.getElementById('adDia').value, logo);
+      if (eq) {
+        mostrarErrorUsuario('✅ Equipo creado');
+        await updateSelects();
+        mostrarGestionEquipos();
+      }
+      if (btn) { btn.disabled = false; btn.textContent = '✅ CREAR EQUIPO'; }
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = '✅ CREAR EQUIPO'; }
+  }
 };
 
 window.eliminarEquipoAdmin = async function(id) {
   if (!confirm('¿Eliminar este equipo?')) return;
   await db.deleteEquipo(id);
-  alert('🗑️ Eliminado');
+  mostrarErrorUsuario('🗑️ Eliminado');
   await updateSelects();
   mostrarGestionEquipos();
 };
@@ -483,15 +495,15 @@ window.eliminarEquipoAdmin = async function(id) {
 window.eliminarPartido = async function(id) {
   if (!confirm('¿Eliminar este partido del fixture?')) return;
   const { error } = await _supabase.from('fixture').delete().eq('id', id);
-  if (error) return alert('Error al eliminar: ' + error.message);
-  alert('🗑️ Partido eliminado');
+  if (error) return mostrarErrorUsuario('Error al eliminar: ' + error.message);
+  mostrarErrorUsuario('🗑️ Partido eliminado');
   renderFixtureActual();
 };
 
 window.cargarResultadoDeFixture = async function(fixtureId) {
   const fixture = await db.getFixture(torneoActual);
   const match = fixture.find(m => m.id === fixtureId);
-  if (!match) return alert('Partido no encontrado');
+  if (!match) return mostrarErrorUsuario('Partido no encontrado');
 
   // Switch to fixture tab and fill the form
   showSec('fixture', document.querySelector('[onclick*="fixture"]'));
@@ -515,7 +527,7 @@ window.cargarResultadoDeFixture = async function(fixtureId) {
   document.getElementById('contCardsE1').innerHTML = '';
   document.getElementById('contCardsE2').innerHTML = '';
   
-  alert('✅ Partido cargado. Completá el resultado y guardá.');
+  mostrarErrorUsuario('✅ Partido cargado. Completá el resultado y guardá.');
 };
 
 // ✅ DETALLE DE EQUIPO
@@ -590,7 +602,7 @@ async function accesoAdmin(btn) {
     try {
         const { data: { session } } = await _supabase.auth.getSession();
         if (!session) {
-            alert("🔒 Tenés que iniciar sesión para acceder al ADMIN");
+            mostrarErrorUsuario("🔒 Tenés que iniciar sesión para acceder al ADMIN");
             inicializarAuth();
             return;
         }
@@ -605,7 +617,7 @@ async function accesoAdmin(btn) {
             if (el && window.usuarioActual) el.textContent = window.usuarioActual.email;
             return;
         }
-        alert("🔒 Error de conexión. Intentalo de nuevo.");
+        mostrarErrorUsuario("🔒 Error de conexión. Intentalo de nuevo.");
     }
 }
 
@@ -624,11 +636,11 @@ window.eliminarResultado = async function(partidoFixtureId) {
   ]);
 
   const res = resultados.find(r => r.fixture_id === partidoFixtureId);
-  if (!res) return alert('Resultado no encontrado');
+  if (!res) return mostrarErrorUsuario('Resultado no encontrado');
 
   const e1 = equipos.find(e => e.id === res.equipo_local_id);
   const e2 = equipos.find(e => e.id === res.equipo_visitante_id);
-  if (!e1 || !e2) return alert('Equipos no encontrados');
+  if (!e1 || !e2) return mostrarErrorUsuario('Equipos no encontrados');
 
   // Revert team stats
   const revertE1 = { ...e1, pj: Math.max(0, e1.pj - 1), gf: Math.max(0, e1.gf - res.goles_local), gc: Math.max(0, e1.gc - res.goles_visitante) };
@@ -686,7 +698,7 @@ window.eliminarResultado = async function(partidoFixtureId) {
   ]);
   await db.deleteResultado(res.id);
 
-  alert('🗑️ Resultado eliminado y estadísticas revertidas');
+  mostrarErrorUsuario('🗑️ Resultado eliminado y estadísticas revertidas');
   await recargarDatos();
   renderFixtureActual();
 };
@@ -719,7 +731,13 @@ window.cargarResultadoGlobal = async function() {
     if (editFlag) editFlag.value = '0';
   }
 
-  return _cargarResultadoGlobalOriginal();
+  const btn = document.querySelector('[onclick*="cargarResultadoGlobal"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Guardando...'; }
+  try {
+    return await _cargarResultadoGlobalOriginal();
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '✅ GUARDAR RESULTADO'; }
+  }
 };
 
 // =====================================================================
@@ -759,7 +777,7 @@ window.guardarEdicionEquipo = async function(id) {
   const nom = document.getElementById('editEqNom').value.trim();
   const dia = document.getElementById('editEqDia').value;
   const fileInput = document.getElementById('editEqLog');
-  if (!nom) return alert('El nombre es obligatorio');
+  if (!nom) return mostrarErrorUsuario('El nombre es obligatorio');
 
   const updates = { nombre: nom, dia_semana: dia };
   if (fileInput.files[0]) {
@@ -767,7 +785,7 @@ window.guardarEdicionEquipo = async function(id) {
     reader.onload = async (e) => {
       updates.logo = await comprimirImagen(e.target.result, 150);
       await db.updateEquipo(id, updates);
-      alert('✅ Equipo actualizado');
+      mostrarErrorUsuario('✅ Equipo actualizado');
       document.getElementById('edit-team-overlay')?.remove();
       mostrarGestionEquipos();
       await updateSelects();
@@ -775,7 +793,7 @@ window.guardarEdicionEquipo = async function(id) {
     reader.readAsDataURL(fileInput.files[0]);
   } else {
     await db.updateEquipo(id, updates);
-    alert('✅ Equipo actualizado');
+    mostrarErrorUsuario('✅ Equipo actualizado');
     document.getElementById('edit-team-overlay')?.remove();
     mostrarGestionEquipos();
     await updateSelects();
@@ -900,7 +918,7 @@ window.guardarEdicionJugador = async function(id) {
   const equipoId = parseInt(document.getElementById('editJugEq').value);
   const fileInput = document.getElementById('editJugFoto');
 
-  if (!nom) return alert('El nombre es obligatorio');
+  if (!nom) return mostrarErrorUsuario('El nombre es obligatorio');
 
   const updates = { nombre: nom, posicion: pos, pierna: pierna };
 
@@ -921,7 +939,7 @@ window.guardarEdicionJugador = async function(id) {
       } else if (currentEquipos.length > 0) {
         await _supabase.from('jugador_equipo').delete().eq('jugador_id', id);
       }
-      alert('✅ Jugador actualizado');
+      mostrarErrorUsuario('✅ Jugador actualizado');
       document.getElementById('edit-player-overlay')?.remove();
       mostrarGestionJugadores();
     };
@@ -939,7 +957,7 @@ window.guardarEdicionJugador = async function(id) {
     } else if (currentEquipos.length > 0) {
       await _supabase.from('jugador_equipo').delete().eq('jugador_id', id);
     }
-    alert('✅ Jugador actualizado');
+    mostrarErrorUsuario('✅ Jugador actualizado');
     document.getElementById('edit-player-overlay')?.remove();
     mostrarGestionJugadores();
   }
@@ -955,7 +973,7 @@ window.eliminarJugadorAdmin = async function(id) {
   // Delete team links first
   await _supabase.from('jugador_equipo').delete().eq('jugador_id', id);
   await db.deleteJugador(id);
-  alert('🗑️ Jugador eliminado');
+  mostrarErrorUsuario('🗑️ Jugador eliminado');
   mostrarGestionJugadores();
 };
 
