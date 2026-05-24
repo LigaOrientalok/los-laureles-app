@@ -178,7 +178,7 @@ async function loginUsuario(btn) {
     } else {
       usuarioActual = data.user;
       await _supabase.from('usuarios').upsert({
-        id: data.user.id, email: data.user.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
+        id: data.user.id, email: data.user.email, fecha_registro: new Date().toISOString()
       });
       mostrarErrorUsuario('✅ ¡Bienvenido!');
       setTimeout(() => location.reload(), 1500);
