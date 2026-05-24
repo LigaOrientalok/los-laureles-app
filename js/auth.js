@@ -126,12 +126,28 @@ async function registrarUsuario() {
     
     if (error) {
       mostrarError(error.message);
-    } else {
-      mostrarError('✅ Cuenta creada. Revisa tu email para confirmar. Luego inicia sesión.');
-      setTimeout(() => {
-        mostrarFormLogin();
-      }, 2000);
+      return;
     }
+    
+    // Manually insert into usuarios table (bypasses trigger issues)
+    if (data?.user) {
+      const { error: insertError } = await _supabase.from('usuarios').upsert({
+        id: data.user.id,
+        email: data.user.email,
+        rol: 'usuario',
+        estado: 'pendiente',
+        fecha_registro: new Date().toISOString()
+      });
+      
+      if (insertError) {
+        console.error('Error insertando usuario:', insertError);
+      }
+    }
+    
+    mostrarError('✅ Cuenta creada. Revisa tu email para confirmar. Luego inicia sesión.');
+    setTimeout(() => {
+      mostrarFormLogin();
+    }, 2000);
   } catch (e) {
     mostrarError('Error al registrar: ' + e.message);
   }
