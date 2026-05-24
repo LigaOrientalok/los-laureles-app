@@ -325,7 +325,7 @@
                             </tr></thead>
                             <tbody>${usuarios.map(u => `
                                 <tr style="border-bottom:1px solid #30363d;">
-                                    <td style="padding:8px;">${u.email}</td>
+                                    <td style="padding:8px;">${escapeHtml(u.email)}</td>
                                     <td style="padding:8px; text-align:center;">
                                         <select onchange="cambiarRol('${u.id}', this.value)" style="padding:4px; background:#0d1117; color:white; border:1px solid #30363d; border-radius:4px; font-size:0.8rem;">
                                             <option value="usuario" ${u.rol === 'usuario' ? 'selected' : ''}>Usuario</option>
@@ -341,7 +341,7 @@
                                         </select>
                                     </td>
                                     <td style="padding:8px; text-align:center;">
-                                        <button onclick="eliminarUsuario('${u.id}', '${u.email}')" style="background:#ef4444; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem;">Eliminar</button>
+                                        <button onclick="eliminarUsuario(this.dataset.uid, this.dataset.uemail)" data-uid="${u.id}" data-uemail="${escapeHtml(u.email)}" style="background:#ef4444; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem;">Eliminar</button>
                                     </td>
                                 </tr>`).join('')}</tbody>
                         </table>

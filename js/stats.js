@@ -161,7 +161,7 @@ function renderTablaEstadisticas(jugadores) {
       <tbody>
         ${jugadores.map((j, i) => `
           <tr style="border-bottom:1px solid #30363d; ${i % 2 ? 'background:rgba(0,0,0,0.2);' : ''}">
-            <td style="padding:10px;">${j.nombre}</td>
+            <td style="padding:10px;">${escapeHtml(j.nombre)}</td>
             <td style="padding:10px; text-align:center;">${j.goles}</td>
             <td style="padding:10px; text-align:center;">${j.pj}</td>
             <td style="padding:10px; text-align:center;">${j.mvps || 0}</td>

@@ -18,6 +18,16 @@ function mostrarErrorUsuario(mensaje) {
 }
 
 // Funciones de utilidad
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 const db = {
   _handleError(context, error) {
     if (error) {
@@ -71,11 +81,16 @@ const db = {
   async getJugadores(torneoId) {
     const { data: jugadores, error } = await _supabase.from('jugadores').select('*').eq('torneo_id', torneoId);
     if (error) { this._handleError('Error fetching jugadores:', error); return []; }
-    const { data: vinculos } = await _supabase.from('jugador_equipo').select('*');
-    if (vinculos) {
-      jugadores.forEach(j => {
-        j.equipos = vinculos.filter(v => v.jugador_id === j.id).map(v => v.equipo_id);
-      });
+    // Only fetch vinculaciones for equipos in this torneo
+    const { data: equipos } = await _supabase.from('equipos').select('id').eq('torneo_id', torneoId);
+    const equipoIds = equipos?.map(e => e.id) || [];
+    if (equipoIds.length > 0) {
+      const { data: vinculos } = await _supabase.from('jugador_equipo').select('*').in('equipo_id', equipoIds);
+      if (vinculos) {
+        jugadores.forEach(j => {
+          j.equipos = vinculos.filter(v => v.jugador_id === j.id).map(v => v.equipo_id);
+        });
+      }
     }
     return jugadores;
   },

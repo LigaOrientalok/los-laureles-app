@@ -59,8 +59,8 @@ async function mostrarDashboardUsuarios() {
           <tbody>
             ${usuarios.map(u => `
               <tr style="border-bottom:1px solid #30363d;">
-                <td style="padding:12px;">${u.email}</td>
-                <td style="padding:12px;">${u.nombre || '-'}</td>
+                <td style="padding:12px;">${escapeHtml(u.email)}</td>
+                <td style="padding:12px;">${escapeHtml(u.nombre || '-')}</td>
                 <td style="padding:12px; text-align:center;">
                   <select onchange="cambiarRol('${u.id}', this.value)" style="padding:6px; background:#0d1117; color:white; border:1px solid #30363d; border-radius:4px;">
                     <option value="usuario" ${u.rol === 'usuario' ? 'selected' : ''}>Usuario</option>
@@ -125,20 +125,16 @@ async function cambiarEstado(usuarioId, nuevoEstado) {
   }
 }
 
-// Eliminar usuario
+// Eliminar usuario (también de auth.users vía RPC)
 async function eliminarUsuario(usuarioId, email) {
   if (!confirm(`¿Eliminar usuario ${email}?`)) return;
 
-  // Eliminar de tabla usuarios (la tabla auth.users se elimina automáticamente por CASCADE)
-  const { error } = await _supabase
-    .from('usuarios')
-    .delete()
-    .eq('id', usuarioId);
+  const { error } = await _supabase.rpc('eliminar_usuario_auth', { user_id: usuarioId });
   
   if (error) {
-    alert('Error al eliminar usuario');
+    alert('Error al eliminar usuario: ' + error.message);
   } else {
-    alert('✅ Usuario eliminado');
+    alert('✅ Usuario eliminado (auth + público)');
     mostrarDashboardUsuarios();
   }
 }

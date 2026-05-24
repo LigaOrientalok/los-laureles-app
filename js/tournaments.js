@@ -15,7 +15,7 @@ function renderizarSelectorTorneos(torneos) {
   if (!selectTorneo) return;
 
   selectTorneo.innerHTML = torneos.map(t => 
-    `<option value="${t.id}" ${t.id === torneoActual ? 'selected' : ''}>${t.nombre}</option>`
+    `<option value="${t.id}" ${t.id === torneoActual ? 'selected' : ''}>${escapeHtml(t.nombre)}</option>`
   ).join('');
 
   selectTorneo.onchange = async (e) => {
@@ -54,7 +54,7 @@ async function updateSelects() {
   if (!torneoActual) return;
 
   const equipos = await db.getEquipos(torneoActual);
-  const options = equipos.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+  const options = equipos.map(e => `<option value="${e.id}">${escapeHtml(e.nombre)}</option>`).join('');
 
   ['regEqSelect', 'resE1', 'resE2'].forEach(id => {
     const el = document.getElementById(id);
@@ -85,7 +85,7 @@ async function renderTablaActual() {
       <td>${i + 1}</td>
       <td style="text-align:left">
         <img src="${e.logo}" class="mini-logo-table" style="width:28px; height:28px; border-radius:50%; margin-right:8px;">
-        <a href="#" onclick="mostrarDetalleEquipo(${e.id}); return false;" style="color:white; text-decoration:none; font-weight:600;" onmouseover="this.style.color='#eab308'" onmouseout="this.style.color='white'">${e.nombre}</a>
+        <a href="#" onclick="mostrarDetalleEquipo(${e.id}); return false;" style="color:white; text-decoration:none; font-weight:600;" onmouseover="this.style.color='#eab308'" onmouseout="this.style.color='white'">${escapeHtml(e.nombre)}</a>
       </td>
       <td>${e.pj}</td>
       <td>${e.v}</td>
@@ -115,11 +115,11 @@ async function renderFixtureActual() {
 
   const getEqName = (id) => {
     const eq = equipos.find(e => e.id === id);
-    return eq ? eq.nombre : `Equipo ${id}`;
+    return eq ? escapeHtml(eq.nombre) : `Equipo ${id}`;
   };
 
   const grupos = fixture.reduce((acc, m) => {
-    const k = `${m.dia_semana} - ${m.fecha}`;
+    const k = `${escapeHtml(m.dia_semana)} - ${escapeHtml(m.fecha)}`;
     if (!acc[k]) acc[k] = [];
     acc[k].push(m);
     return acc;

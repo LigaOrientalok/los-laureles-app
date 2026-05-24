@@ -216,7 +216,7 @@ window.generarInputsGoles = async function(lado) {
   const jugsDel = jugadores.filter(j => j.equipos?.includes(equipoId));
   
   document.getElementById('contGoles' + lado).innerHTML = Array.from({length: n}, () => 
-    `<select class="sel-gol-${lado}" style="width:100%; padding:8px; margin:5px 0;">${jugsDel.map(j => `<option value="${j.id}">${j.nombre}</option>`).join('')}</select>`
+    `<select class="sel-gol-${lado}" style="width:100%; padding:8px; margin:5px 0;">${jugsDel.map(j => `<option value="${j.id}">${escapeHtml(j.nombre)}</option>`).join('')}</select>`
   ).join('');
 };
 
@@ -230,7 +230,7 @@ window.agregarInputTarjeta = async function(lado) {
   const div = document.createElement('div');
   div.style = "display:flex; gap:5px; margin-top:5px";
   div.innerHTML = `
-    <select class="sel-card-j-${lado}" style="flex:1; padding:8px;">${jugsDel.map(j => `<option value="${j.id}">${j.nombre}</option>`).join('')}</select>
+    <select class="sel-card-j-${lado}" style="flex:1; padding:8px;">${jugsDel.map(j => `<option value="${j.id}">${escapeHtml(j.nombre)}</option>`).join('')}</select>
     <select class="sel-card-t-${lado}" style="flex:0.3; padding:8px;">
       <option value="A">🟨</option>
       <option value="R">🟥</option>
@@ -249,7 +249,7 @@ window.actualizarListasJugadores = async function() {
   const jugadores = await db.getJugadores(torneoActual);
   const jugs = jugadores.filter(j => j.equipos?.includes(e1Id) || j.equipos?.includes(e2Id));
   
-  document.getElementById('resMVP').innerHTML = jugs.map(j => `<option value="${j.id}">${j.nombre}</option>`).join('');
+  document.getElementById('resMVP').innerHTML = jugs.map(j => `<option value="${j.id}">${escapeHtml(j.nombre)}</option>`).join('');
 };
 
 window.cargarResultadoGlobal = async function() {
@@ -371,12 +371,12 @@ window.renderFama = async function() {
     <div class="ficha-ea">
       <div class="card-badge">
         <div class="rating">${calcularRating(j)}</div>
-        <div class="pos">${j.posicion}</div>
+        <div class="pos">${escapeHtml(j.posicion)}</div>
       </div>
       <img src="${j.foto}" class="perfil-ea">
       <img src="${logoEq(j)}" style="position:absolute;bottom:80px;right:10px;width:32px;height:32px;border-radius:50%;border:2px solid #eab308;background:#0d1117;object-fit:cover;" onerror="this.style.display='none'">
       <div class="info-jugador-ea">
-        <h3>${j.nombre}</h3>
+        <h3>${escapeHtml(j.nombre)}</h3>
         <div class="stats-ea">
           <span>⚽ ${j.goles}</span>
           <span>⭐ ${j.mvps}</span>
@@ -431,8 +431,8 @@ window.mostrarGestionEquipos = async function() {
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
                   <img src="${eq.logo || ''}" style="width:36px; height:36px; border-radius:50%; object-fit:cover; background:#30363d;" onerror="this.style.display='none'">
                   <div>
-                    <strong style="color:white; font-size:1rem;">${eq.nombre}</strong>
-                    <span style="color:#8b949e; font-size:0.8rem; display:block;">${eq.dia_semana} | PJ: ${eq.pj || 0} | PTS: ${eq.pts || 0}</span>
+                    <strong style="color:white; font-size:1rem;">${escapeHtml(eq.nombre)}</strong>
+                    <span style="color:#8b949e; font-size:0.8rem; display:block;">${escapeHtml(eq.dia_semana)} | PJ: ${eq.pj || 0} | PTS: ${eq.pts || 0}</span>
                   </div>
                   <button onclick="editarEquipo(${eq.id})" class="btn-mini" style="background:#3b82f6; color:white; padding:4px 8px; font-size:0.7rem;">✏️</button>
                   <button onclick="eliminarEquipoAdmin(${eq.id})" style="margin-left:auto; background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:0.8rem;">🗑️</button>
@@ -440,7 +440,7 @@ window.mostrarGestionEquipos = async function() {
                 ${jugsEq.length > 0 ? `
                   <div style="display:flex; flex-wrap:wrap; gap:5px;">
                     ${jugsEq.map(j => `
-                      <span style="background:#30363d; padding:2px 8px; border-radius:4px; font-size:0.8rem; color:#b0bcc4;">${j.nombre}</span>
+                      <span style="background:#30363d; padding:2px 8px; border-radius:4px; font-size:0.8rem; color:#b0bcc4;">${escapeHtml(j.nombre)}</span>
                     `).join('')}
                   </div>
                 ` : '<p style="color:#8b949e; font-size:0.8rem; margin:0;">Sin jugadores</p>'}
@@ -543,8 +543,8 @@ window.mostrarDetalleEquipo = async function(equipoId) {
       <button onclick="this.closest('#team-detail-overlay').remove()" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
       <div style="text-align:center; margin-bottom:20px;">
         <img src="${eq.logo || ''}" style="width:60px; height:60px; border-radius:50%; object-fit:cover; background:#30363d; margin-bottom:10px;" onerror="this.style.display='none'">
-        <h2 style="color:#eab308; margin:0;">${eq.nombre}</h2>
-        <p style="color:#8b949e; margin:5px 0;">${eq.dia_semana}</p>
+        <h2 style="color:#eab308; margin:0;">${escapeHtml(eq.nombre)}</h2>
+        <p style="color:#8b949e; margin:5px 0;">${escapeHtml(eq.dia_semana)}</p>
         <div style="display:flex; justify-content:center; gap:20px; margin:10px 0; color:#b0bcc4; font-size:0.9rem;">
           <span>PJ: <b style="color:white;">${eq.pj || 0}</b></span>
           <span>V: <b style="color:#22c55e;">${eq.v || 0}</b></span>
@@ -565,8 +565,8 @@ window.mostrarDetalleEquipo = async function(equipoId) {
           <div style="display:flex; align-items:center; gap:10px; padding:8px; background:#0d1117; border-radius:6px; margin-bottom:5px;">
             <img src="${j.foto || DEFAULT_AVATAR}" style="width:32px; height:32px; border-radius:50%; object-fit:cover;">
             <div style="flex:1;">
-              <strong style="color:white; font-size:0.9rem;">${j.nombre}</strong>
-              <span style="color:#8b949e; font-size:0.75rem; margin-left:8px;">${j.posicion || ''}</span>
+              <strong style="color:white; font-size:0.9rem;">${escapeHtml(j.nombre)}</strong>
+              <span style="color:#8b949e; font-size:0.75rem; margin-left:8px;">${escapeHtml(j.posicion || '')}</span>
             </div>
             <span style="color:#b0bcc4; font-size:0.8rem;">⚽ ${j.goles || 0}</span>
             <span style="color:#b0bcc4; font-size:0.8rem;">⭐ ${j.mvps || 0}</span>
@@ -742,7 +742,7 @@ window.editarEquipo = async function(id) {
       <button onclick="this.closest('#edit-team-overlay').remove()" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
       <h3 style="color:#eab308; margin-bottom:15px;">✏️ Editar Equipo</h3>
       <label class="label-accent">Nombre:</label>
-      <input type="text" id="editEqNom" value="${eq.nombre}" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px; box-sizing:border-box;">
+      <input type="text" id="editEqNom" value="${escapeHtml(eq.nombre)}" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px; box-sizing:border-box;">
       <label class="label-accent">Día:</label>
       <select id="editEqDia" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px;">
         <option>Lunes</option><option value="Miercoles" ${eq.dia_semana === 'Miercoles' ? 'selected' : ''}>Miércoles</option><option>Jueves</option><option>Viernes</option><option value="Sabado" ${eq.dia_semana === 'Sabado' ? 'selected' : ''}>Sábado</option><option>Domingo</option>
@@ -814,12 +814,12 @@ window.mostrarGestionJugadores = async function() {
             <th style="padding:8px; color:#eab308;">Acción</th>
           </tr></thead>
           <tbody>${jugadores.map(j => {
-            const eqs = j.equipos?.map(eId => equipos.find(e => e.id === eId)?.nombre).filter(Boolean).join(', ') || '-';
+            const eqs = j.equipos?.map(eId => { const eq = equipos.find(e => e.id === eId); return eq ? escapeHtml(eq.nombre) : ''; }).filter(Boolean).join(', ') || '-';
             return `
               <tr style="border-bottom:1px solid #30363d;">
                 <td style="padding:8px;"><img src="${j.foto || DEFAULT_AVATAR}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;"></td>
-                <td style="padding:8px; text-align:left;"><a href="#" onclick="mostrarDetalleJugador(${j.id}); return false;" style="color:white;text-decoration:none;" onmouseover="this.style.color='#eab308'" onmouseout="this.style.color='white'">${j.nombre}</a></td>
-                <td style="padding:8px;">${j.posicion || '-'}</td>
+                <td style="padding:8px; text-align:left;"><a href="#" onclick="mostrarDetalleJugador(${j.id}); return false;" style="color:white;text-decoration:none;" onmouseover="this.style.color='#eab308'" onmouseout="this.style.color='white'">${escapeHtml(j.nombre)}</a></td>
+                <td style="padding:8px;">${escapeHtml(j.posicion || '-')}</td>
                 <td style="padding:8px; font-size:0.75rem;">${eqs}</td>
                 <td style="padding:8px;">${j.goles || 0}</td>
                 <td style="padding:8px;">${j.mvps || 0}</td>
@@ -848,7 +848,7 @@ window.editarJugador = async function(id) {
   if (!j) return;
 
   const eqOpts = equipos.map(e =>
-    `<option value="${e.id}" ${j.equipos?.includes(e.id) ? 'selected' : ''}>${e.nombre}</option>`
+    `<option value="${e.id}" ${j.equipos?.includes(e.id) ? 'selected' : ''}>${escapeHtml(e.nombre)}</option>`
   ).join('');
 
   const overlay = document.createElement('div');
@@ -861,7 +861,7 @@ window.editarJugador = async function(id) {
       <button onclick="this.closest('#edit-player-overlay').remove()" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
       <h3 style="color:#eab308; margin-bottom:15px;">✏️ Editar Jugador</h3>
       <label class="label-accent">Nombre:</label>
-      <input type="text" id="editJugNom" value="${j.nombre}" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px;">
+      <input type="text" id="editJugNom" value="${escapeHtml(j.nombre)}" style="width:100%; padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; margin-bottom:10px;">
       <div style="display:flex; gap:10px;">
         <div style="flex:1">
           <label class="label-accent">Posición:</label>
@@ -985,16 +985,16 @@ window.mostrarDetalleJugador = async function(jugadorId) {
       <button onclick="this.closest('#player-detail-overlay').remove()" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
       <div style="text-align:center; margin-bottom:20px;">
         <img src="${j.foto || DEFAULT_AVATAR}" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid #eab308; margin-bottom:10px;">
-        <h2 style="color:#eab308; margin:5px 0;">${j.nombre}</h2>
+        <h2 style="color:#eab308; margin:5px 0;">${escapeHtml(j.nombre)}</h2>
         <div style="display:flex; justify-content:center; gap:10px; margin:5px 0;">
-          <span style="background:#3b82f6; padding:2px 12px; border-radius:4px; font-size:0.8rem;">${posMap[j.posicion] || j.posicion}</span>
-          <span style="background:#30363d; padding:2px 12px; border-radius:4px; font-size:0.8rem;">${pieMap[j.pierna] || j.pierna}</span>
+          <span style="background:#3b82f6; padding:2px 12px; border-radius:4px; font-size:0.8rem;">${escapeHtml(posMap[j.posicion] || j.posicion)}</span>
+          <span style="background:#30363d; padding:2px 12px; border-radius:4px; font-size:0.8rem;">${escapeHtml(pieMap[j.pierna] || j.pierna)}</span>
         </div>
         <div style="display:flex; justify-content:center; gap:10px; margin-top:8px;">
           ${equiposJug.map(eq => `
             <div style="display:flex; align-items:center; gap:5px; background:#0d1117; padding:4px 12px; border-radius:20px; border:1px solid #30363d;">
               ${eq.logo ? `<img src="${eq.logo}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;">` : ''}
-              <span style="font-size:0.8rem; color:#b0bcc4;">${eq.nombre}</span>
+              <span style="font-size:0.8rem; color:#b0bcc4;">${escapeHtml(eq.nombre)}</span>
             </div>
           `).join('')}
         </div>

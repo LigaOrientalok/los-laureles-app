@@ -82,7 +82,7 @@
             const torneos = await db.getTorneos();
             if (torneos.length > 0) {
                 torneoActualPub = torneos[0].id;
-                const options = torneos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+                const options = torneos.map(t => `<option value="${t.id}">${escapeHtml(t.nombre)}</option>`).join('');
                 document.getElementById('selectTorneoPub').innerHTML = options;
                 await cargarTablaPub('');
                 // Actualizar cada 30 segundos
@@ -133,7 +133,7 @@
                         ${ordenados.map((e, i) => `
                             <tr style="border-bottom:1px solid #30363d; ${i % 2 ? 'background:rgba(0,0,0,0.2);' : ''}">
                                 <td style="padding:12px; text-align:center;">${i + 1}</td>
-                                <td style="padding:12px; text-align:left;"><img src="${e.logo}" style="width:24px; height:24px; border-radius:50%; margin-right:8px; vertical-align:middle;"> ${e.nombre}</td>
+                                 <td style="padding:12px; text-align:left;"><img src="${e.logo}" style="width:24px; height:24px; border-radius:50%; margin-right:8px; vertical-align:middle;"> ${escapeHtml(e.nombre)}</td>
                                 <td style="padding:12px; text-align:center;">${e.pj}</td>
                                 <td style="padding:12px; text-align:center;">${e.v}</td>
                                 <td style="padding:12px; text-align:center;">${e.e}</td>
@@ -254,7 +254,7 @@
                     </div>
                     <img src="${j.foto}" class="perfil-ea">
                     <div class="info-jugador-ea">
-                        <h3>${j.nombre}</h3>
+                        <h3>${escapeHtml(j.nombre)}</h3>
                         <div class="stats-ea">
                             <span>⚽ ${j.goles}</span>
                             <span>⭐ ${j.mvps || 0}</span>
