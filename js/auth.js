@@ -9,7 +9,17 @@ async function inicializarAuth() {
     usuarioActual = session?.user || null;
     
     if (usuarioActual) {
-      const { data: userData } = await _supabase.from('usuarios').select('rol').eq('email', usuarioActual.email).single();
+      let userData;
+      try {
+        const { data } = await _supabase.from('usuarios').select('rol').eq('email', usuarioActual.email).maybeSingle();
+        userData = data;
+      } catch(e) { userData = null; }
+      if (!userData) {
+        await _supabase.from('usuarios').upsert({
+          id: usuarioActual.id, email: usuarioActual.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
+        });
+        userData = { rol: 'usuario' };
+      }
       window.esAdmin = (userData?.rol === 'admin');
       window.usuarioData = userData;
       mostrarPanelAdmin();
@@ -174,6 +184,14 @@ async function loginUsuario() {
       mostrarError('Email o contraseña incorrectos');
     } else {
       usuarioActual = data.user;
+      // Ensure user record exists in public.usuarios
+      await _supabase.from('usuarios').upsert({
+        id: data.user.id,
+        email: data.user.email,
+        rol: 'usuario',
+        estado: 'pendiente',
+        fecha_registro: new Date().toISOString()
+      });
       alert('✅ ¡Bienvenido!');
       location.reload();
     }

@@ -39,7 +39,17 @@
             } else {
                 window._sessionCached = true;
                 window.usuarioActual = session.user;
-                const { data: userData } = await _supabase.from('usuarios').select('rol').eq('email', session.user.email).single();
+                let userData;
+                try {
+                    const { data } = await _supabase.from('usuarios').select('rol').eq('email', session.user.email).maybeSingle();
+                    userData = data;
+                } catch(e) { userData = null; }
+                if (!userData) {
+                    await _supabase.from('usuarios').upsert({
+                        id: session.user.id, email: session.user.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
+                    });
+                    userData = { rol: 'usuario' };
+                }
                 window.usuarioData = userData;
                 window.esAdmin = (userData?.rol === 'admin');
                 mostrarApp();
