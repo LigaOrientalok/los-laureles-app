@@ -213,7 +213,9 @@ window.generarInputsGoles = async function(lado) {
   if (!torneoActual) return;
   
   const n = parseInt(document.getElementById('resG' + (lado === 'E1' ? '1' : '2')).value) || 0;
-  const equipoId = parseInt(document.getElementById('res' + (lado === 'E1' ? '1' : '2')).value);
+  const resEl = document.getElementById('res' + (lado === 'E1' ? 'E1' : 'E2'));
+  if (!resEl) return;
+  const equipoId = parseInt(resEl.value);
   
   const jugadores = await db.getJugadores(torneoActual);
   const jugsDel = jugadores.filter(j => j.equipos?.includes(equipoId));
@@ -226,7 +228,9 @@ window.generarInputsGoles = async function(lado) {
 window.agregarInputTarjeta = async function(lado) {
   if (!torneoActual) return;
   
-  const equipoId = parseInt(document.getElementById('res' + (lado === 'E1' ? '1' : '2')).value);
+  const resEl = document.getElementById('res' + (lado === 'E1' ? 'E1' : 'E2'));
+  if (!resEl) return;
+  const equipoId = parseInt(resEl.value);
   const jugadores = await db.getJugadores(torneoActual);
   const jugsDel = jugadores.filter(j => j.equipos?.includes(equipoId));
   
