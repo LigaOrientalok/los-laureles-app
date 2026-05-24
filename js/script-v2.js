@@ -152,8 +152,6 @@ window.addEq = async function(btn) {
   };
   reader.readAsDataURL(fileInput.files[0]);
 };
-  reader.readAsDataURL(fileInput.files[0]);
-};
 
 window.generarFixtureAuto = async function(btn) {
   if (!torneoActual) return mostrarErrorUsuario('Selecciona un torneo');
