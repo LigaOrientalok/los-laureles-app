@@ -21,6 +21,7 @@ async function inicializarAuth() {
         userData = { rol: 'usuario' };
       }
       window.esAdmin = (userData?.rol === 'admin');
+      window.esArbitro = (userData?.rol === 'arbitro');
       window.usuarioData = userData;
       mostrarPanelAdmin();
     } else {
