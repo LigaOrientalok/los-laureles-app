@@ -319,7 +319,7 @@ window.cargarResultadoGlobal = async function() {
     const equipoId = s.classList.contains('sel-gol-E1') ? e1Id : e2Id;
     goalPromises.push(
       db.createGol(resId, jugadorId, equipoId, null)
-        .then(() => db.updateJugador(jugadorId, { ...jugador, goles: jugador.goles + 1, pj: jugador.pj + 1 }))
+        .then(() => db.updateJugador(jugadorId, { goles: (jugador.goles || 0) + 1, pj: (jugador.pj || 0) + 1 }))
     );
   });
   await Promise.all(goalPromises);
@@ -337,11 +337,7 @@ window.cargarResultadoGlobal = async function() {
       const tipo = tS[i]?.value || 'A';
       cardPromises.push(
         db.createTarjeta(resId, jugadorId, equipoId, tipo, null)
-          .then(() => {
-            const upd = { ...jugador };
-            upd[tipo === 'A' ? 'amarillas' : 'rojas'] = (jugador[tipo === 'A' ? 'amarillas' : 'rojas'] || 0) + 1;
-            return db.updateJugador(jugadorId, upd);
-          })
+          .then(() => db.updateJugador(jugadorId, { [tipo === 'A' ? 'amarillas' : 'rojas']: (jugador[tipo === 'A' ? 'amarillas' : 'rojas'] || 0) + 1 }))
       );
     });
   });
@@ -351,7 +347,7 @@ window.cargarResultadoGlobal = async function() {
   if (mvpId) {
     const jugador = jugadores.find(x => x.id === mvpId);
     if (jugador) {
-      await db.updateJugador(mvpId, { ...jugador, mvps: jugador.mvps + 1 });
+      await db.updateJugador(mvpId, { mvps: (jugador.mvps || 0) + 1 });
     }
   }
   
