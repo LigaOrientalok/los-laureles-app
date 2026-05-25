@@ -39,19 +39,18 @@
     <script>
         function initAuth() {
             const overlay = document.getElementById('intro-overlay');
-            if (!overlay || window.location.hash || sessionStorage.getItem('introSeen')) {
+            if (!overlay || window.location.hash) {
                 overlay?.remove();
                 inicializarAuth();
-            } else {
-                document.getElementById('intro-skip').addEventListener('click', () => {
-                    overlay.classList.add('fade-out');
-                    sessionStorage.setItem('introSeen', '1');
-                    setTimeout(() => { overlay.remove(); inicializarAuth(); }, 800);
-                });
-                document.getElementById('intro-video').addEventListener('ended', () => {
-                    document.getElementById('intro-skip')?.click();
-                });
+                return;
             }
+            document.getElementById('intro-skip').addEventListener('click', () => {
+                overlay.classList.add('fade-out');
+                setTimeout(() => { overlay.remove(); inicializarAuth(); }, 800);
+            });
+            document.getElementById('intro-video').addEventListener('ended', () => {
+                document.getElementById('intro-skip')?.click();
+            });
         }
         document.addEventListener('DOMContentLoaded', initAuth);
     </script>

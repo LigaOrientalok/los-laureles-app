@@ -72,15 +72,17 @@ td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
 }
 .intro-player {
   position: relative; z-index: 1;
-  width: 90%; max-width: 800px;
+  width: auto; max-width: 90%;
+  max-height: 80vh;
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 0 60px rgba(0,0,0,0.8), 0 0 0 2px rgba(234, 179, 8, 0.15);
   background: #000;
 }
 .intro-player video {
-  width: 100%; height: auto;
+  height: 80vh; width: auto;
   display: block;
+  max-width: 100%;
 }
 .intro-skip {
   position: relative; z-index: 1;
