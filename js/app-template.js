@@ -66,9 +66,12 @@ function mostrarApp() {
   if (!app) return;
   app.innerHTML = `
     <header>
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:0 20px;">
+      <div class="header-row">
         <h1>LIGA <span class="accent-text">ORIENTAL</span></h1>
-        <button onclick="logoutUsuario()" style="background:#ef4444; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🚪 Cerrar Sesión</button>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="hamburger" id="hamburger-btn">☰</button>
+          <button onclick="logoutUsuario()" style="background:#ef4444; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🚪 Cerrar Sesión</button>
+        </div>
       </div>
 
       <div style="display:flex; gap:10px; justify-content:center; margin:10px 0; flex-wrap:wrap;">
@@ -80,7 +83,8 @@ function mostrarApp() {
         <button onclick="exportarPDF(torneoActual)" class="admin-only btn-mini" style="background:#f97316; color:white;">📑 PDF</button>
       </div>
 
-      <nav class="nav-main">
+      <nav class="nav-main" id="nav-main">
+        <button class="nav-close" id="nav-close-btn">✕</button>
         <button class="nav-btn active" onclick="showSec('inicio', this)">REGISTRO</button>
         <button class="nav-btn" onclick="showSec('tablas', this)">TABLAS</button>
         <button class="nav-btn" onclick="showSec('fixture', this)">📅 FIXTURE</button>
@@ -263,4 +267,15 @@ function mostrarApp() {
     await inicializarTorneos();
     await updateSelects();
   }, 100);
+
+  // Hamburger toggle
+  const hamBtn = document.getElementById('hamburger-btn');
+  const navMain = document.getElementById('nav-main');
+  const navClose = document.getElementById('nav-close-btn');
+  if (hamBtn && navMain) {
+    const closeNav = () => navMain.classList.remove('open');
+    hamBtn.addEventListener('click', () => navMain.classList.toggle('open'));
+    if (navClose) navClose.addEventListener('click', closeNav);
+    navMain.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', closeNav));
+  }
 }
