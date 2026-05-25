@@ -1004,6 +1004,9 @@ window.mostrarDetalleJugador = async function(jugadorId) {
   const j = jugadores.find(x => x.id === jugadorId);
   if (!j) return;
 
+  const extraStats = typeof computeExtraStats === 'function' ? await computeExtraStats(j, torneoActual) : { vallas_invictas: 0, hattricks: 0 };
+  Object.assign(j, extraStats);
+
   const golesList = allGoles?.data?.filter(g => g.jugador_id === jugadorId) || [];
   const tarjetasList = allTarjetas?.data?.filter(t => t.jugador_id === jugadorId) || [];
 
@@ -1090,7 +1093,7 @@ window.mostrarDetalleJugador = async function(jugadorId) {
         const progreso = Math.min(100, ((xp - antXp) / (sigXp - antXp)) * 100);
         const nivelColor = getNivelColor(nivel);
         const nivelLabel = getNivelLabel(nivel);
-        const misiones = misionesCompletadas(j);
+        const misiones = misionesCompletadas(j, j.posicion);
         const completadas = misiones.filter(m => m.completada).length;
         const totalXpMisiones = xpDeMisiones(j);
         return `

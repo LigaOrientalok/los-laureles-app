@@ -92,6 +92,7 @@ function mostrarApp() {
         <button class="nav-btn" onclick="showSec('fixture', this)">📅 FIXTURE</button>
         <button class="nav-btn" onclick="showSec('stats', this)">📊 STATS</button>
         <button class="nav-btn" onclick="showSec('fama', this)">🏆 FAMA</button>
+        <button class="nav-btn" onclick="mostrarMisiones()">🎯 MISIONES</button>
         <button class="nav-btn admin-btn" onclick="accesoAdmin(this)">⚙️ ADMIN</button>
       </nav>
     </header>
