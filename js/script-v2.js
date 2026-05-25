@@ -1113,3 +1113,50 @@ window.renderFama = async function() {
     };
   });
 };
+
+window.mostrarPerfil = async function() {
+  const user = (await _supabase.auth.getSession()).data?.session?.user;
+  const { data: userData } = await _supabase.from('usuarios').select('*').eq('id', user?.id).maybeSingle();
+  if (!user) return;
+
+  const overlay = document.createElement('div');
+  overlay.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;justify-content:center;align-items:center;z-index:1000;';
+  overlay.id = 'profile-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  const rolMap = { admin: 'Administrador', arbitro: 'Árbitro', usuario: 'Usuario' };
+  const estadoColors = { aprobado: '#22c55e', pendiente: '#f97316', rechazado: '#ef4444' };
+
+  overlay.innerHTML = `
+    <div style="background:#161b22; border:2px solid #eab308; border-radius:16px; padding:30px; max-width:400px; width:90%; position:relative;">
+      <button onclick="this.closest('#profile-overlay').remove()" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
+      <h2 style="color:#eab308; text-align:center; margin-bottom:20px;">👤 Mi Perfil</h2>
+      <div style="background:#0d1117; border-radius:8px; padding:15px; margin-bottom:15px;">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:0.9rem;">
+          <span style="color:#8b949e;">Email:</span><span style="color:white;">${escapeHtml(userData?.email || user.email)}</span>
+          <span style="color:#8b949e;">Rol:</span><span style="color:#eab308; font-weight:bold;">${rolMap[userData?.rol] || userData?.rol || '—'}</span>
+          <span style="color:#8b949e;">Estado:</span><span style="color:${estadoColors[userData?.estado] || '#8b949e'}; font-weight:bold;">${userData?.estado || '—'}</span>
+        </div>
+      </div>
+      <div style="background:#0d1117; border-radius:8px; padding:15px;">
+        <h4 style="color:#eab308; margin:0 0 10px 0;">🔑 Cambiar Contraseña</h4>
+        <input type="password" id="new-pass-1" placeholder="Nueva contraseña (mín 6 caracteres)" style="width:100%; padding:10px; border-radius:6px; border:1px solid #30363d; background:#0d1117; color:white; margin-bottom:8px; box-sizing:border-box;">
+        <input type="password" id="new-pass-2" placeholder="Confirmar contraseña" style="width:100%; padding:10px; border-radius:6px; border:1px solid #30363d; background:#0d1117; color:white; margin-bottom:10px; box-sizing:border-box;">
+        <button onclick="cambiarPassword()" style="width:100%; padding:12px; background:#eab308; color:black; font-weight:bold; border:none; border-radius:6px; cursor:pointer;">Actualizar Contraseña</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+};
+
+window.cambiarPassword = async function() {
+  const p1 = document.getElementById('new-pass-1')?.value;
+  const p2 = document.getElementById('new-pass-2')?.value;
+  if (!p1 || p1.length < 6) return mostrarErrorUsuario('La contraseña debe tener mínimo 6 caracteres');
+  if (p1 !== p2) return mostrarErrorUsuario('Las contraseñas no coinciden');
+  const { error } = await _supabase.auth.updateUser({ password: p1 });
+  if (error) return mostrarErrorUsuario('Error: ' + error.message);
+  mostrarErrorUsuario('✅ Contraseña actualizada');
+  document.getElementById('new-pass-1').value = '';
+  document.getElementById('new-pass-2').value = '';
+};
