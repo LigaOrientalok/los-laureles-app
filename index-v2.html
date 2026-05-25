@@ -366,9 +366,10 @@
         // ✅ INTRO + INIT
         function initApp() {
             const overlay = document.getElementById('intro-overlay');
-            if (!overlay) { cargarApp(); return; }
+            if (!overlay || sessionStorage.getItem('introDismissed')) { cargarApp(); return; }
             document.getElementById('intro-skip').addEventListener('click', () => {
                 overlay.classList.add('fade-out');
+                sessionStorage.setItem('introDismissed', '1');
                 setTimeout(() => { overlay.remove(); cargarApp(); }, 800);
             });
             document.getElementById('intro-video').addEventListener('ended', () => {
