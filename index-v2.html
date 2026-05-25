@@ -16,6 +16,11 @@
 
     <!-- Estilos -->
     <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#eab308">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/assets/img/liga.jpg">
 </head>
 
 <body>
@@ -35,6 +40,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Service Worker -->
+    <script>if('serviceWorker'in navigator){navigator.serviceWorker.register('/sw.js')}</script>
 
     <!-- Scripts -->
     <script src="js/supabase-config.js"></script>
