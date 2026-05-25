@@ -980,12 +980,35 @@ window.eliminarJugadorAdmin = async function(id) {
 // =====================================================================
 
 window.mostrarDetalleJugador = async function(jugadorId) {
-  const [jugadores, equipos] = await Promise.all([
+  const resultados = await db.getResultados(torneoActual);
+  const resIds = resultados.length > 0 ? resultados.map(r => r.id) : [0];
+  const [jugadores, equipos, fixture, allGolesResp, allTarjetasResp] = await Promise.all([
     db.getJugadores(torneoActual),
-    db.getEquipos(torneoActual)
+    db.getEquipos(torneoActual),
+    db.getFixture(torneoActual),
+    _supabase.from('goles').select('*').in('resultado_id', resIds),
+    _supabase.from('tarjetas').select('*').in('resultado_id', resIds)
   ]);
+  const allGoles = allGolesResp?.data || [];
+  const allTarjetas = allTarjetasResp?.data || [];
   const j = jugadores.find(x => x.id === jugadorId);
   if (!j) return;
+
+  const golesList = allGoles?.data?.filter(g => g.jugador_id === jugadorId) || [];
+  const tarjetasList = allTarjetas?.data?.filter(t => t.jugador_id === jugadorId) || [];
+
+  const partidosHist = [];
+  for (const r of resultados) {
+    const f = fixture.find(x => x.id === r.fixture_id);
+    const golesJug = golesList.filter(g => g.resultado_id === r.id);
+    const tarsJug = tarjetasList.filter(t => t.resultado_id === r.id);
+    if (golesJug.length > 0 || tarsJug.length > 0 || r.mvp_id === jugadorId) {
+      const eqLocal = equipos.find(e => e.id === r.equipo_local_id);
+      const eqVisit = equipos.find(e => e.id === r.equipo_visitante_id);
+      partidosHist.push({ fixture: f, resultado: r, local: eqLocal, visit: eqVisit, goles: golesJug, tarjetas: tarsJug });
+    }
+  }
+  partidosHist.sort((a, b) => (a.fixture?.fecha || '').localeCompare(b.fixture?.fecha || '') || (a.fixture?.hora || '').localeCompare(b.fixture?.hora || ''));
 
   const equiposJug = j.equipos?.map(eId => equipos.find(e => e.id === eId)).filter(Boolean) || [];
   const posMap = { POR: 'Portero', DFC: 'Defensa', MC: 'Mediocampista', DEL: 'Delantero' };
@@ -997,7 +1020,7 @@ window.mostrarDetalleJugador = async function(jugadorId) {
   overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
 
   overlay.innerHTML = `
-    <div style="background:#161b22; border:2px solid #eab308; border-radius:16px; padding:30px; max-width:480px; width:90%; max-height:85vh; overflow-y:auto; position:relative;">
+    <div style="background:#161b22; border:2px solid #eab308; border-radius:16px; padding:30px; max-width:520px; width:90%; max-height:90vh; overflow-y:auto; position:relative;">
       <button onclick="this.closest('#player-detail-overlay').remove()" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
       <div style="text-align:center; margin-bottom:20px;">
         <img src="${j.foto || DEFAULT_AVATAR}" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid #eab308; margin-bottom:10px;">
@@ -1041,13 +1064,35 @@ window.mostrarDetalleJugador = async function(jugadorId) {
           <div style="font-size:0.7rem; color:#8b949e;">ROJAS</div>
         </div>
       </div>
-      <div style="background:#0d1117; border-radius:8px; padding:15px;">
+      <div style="background:#0d1117; border-radius:8px; padding:15px; margin-bottom:15px;">
         <h4 style="color:#eab308; margin:0 0 10px 0;">📊 Estadísticas</h4>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; font-size:0.85rem;">
           <span style="color:#8b949e;">Goles por partido:</span><span style="color:white; font-weight:bold; text-align:right;">${j.pj > 0 ? (j.goles / j.pj).toFixed(2) : '0.00'}</span>
           <span style="color:#8b949e;">MVP por partido:</span><span style="color:white; font-weight:bold; text-align:right;">${j.pj > 0 ? (j.mvps / j.pj).toFixed(2) : '0.00'}</span>
           <span style="color:#8b949e;">Efectividad:</span><span style="color:white; font-weight:bold; text-align:right;">${j.goles > 0 ? ((j.mvps / j.goles) * 100).toFixed(0) : '0'}% MVP</span>
         </div>
+      </div>
+      <div style="background:#0d1117; border-radius:8px; padding:15px;">
+        <h4 style="color:#eab308; margin:0 0 10px 0;">📋 Historial de Partidos</h4>
+        ${partidosHist.length === 0 ? '<p style="color:#8b949e;font-size:0.85rem;">Sin partidos registrados</p>' :
+          partidosHist.map(p => `
+            <div style="display:flex; justify-content:space-between; align-items:center; padding:10px; border-bottom:1px solid #30363d; gap:8px;">
+              <div style="flex:1; min-width:0;">
+                <div style="font-size:0.8rem; color:#8b949e;">${escapeHtml(p.fixture?.fecha || p.fixture?.dia_semana || '—')}</div>
+                <div style="font-size:0.85rem; color:white;">
+                  <span style="color:${p.resultado.goles_local > p.resultado.goles_visitante ? '#22c55e' : '#b0bcc4'};">${escapeHtml(p.local?.nombre || '?')}</span>
+                  <span style="color:#eab308; font-weight:bold; margin:0 4px;">${p.resultado.goles_local}-${p.resultado.goles_visitante}</span>
+                  <span style="color:${p.resultado.goles_visitante > p.resultado.goles_local ? '#22c55e' : '#b0bcc4'};">${escapeHtml(p.visit?.nombre || '?')}</span>
+                </div>
+              </div>
+              <div style="display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;">
+                ${p.goles.map(g => `<span style="background:#22c55e22; color:#22c55e; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;">⚽ ${g.minuto || ''}</span>`).join('')}
+                ${p.tarjetas.map(t => `<span style="background:${t.tipo === 'R' ? '#ef444422' : '#f9731622'}; color:${t.tipo === 'R' ? '#ef4444' : '#f97316'}; padding:2px 6px; border-radius:4px; font-size:0.7rem; font-weight:bold;">${t.tipo === 'R' ? '🟥' : '🟨'} ${t.minuto || ''}</span>`).join('')}
+                ${p.resultado.mvp_id === jugadorId ? '<span style="background:#eab30822; color:#eab308; padding:2px 8px; border-radius:4px; font-size:0.7rem; font-weight:bold;">🏆 MVP</span>' : ''}
+              </div>
+            </div>
+          `).join('')
+        }
       </div>
     </div>
   `;
