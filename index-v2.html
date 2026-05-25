@@ -366,7 +366,8 @@
         // ✅ INTRO + INIT
         function initApp() {
             const overlay = document.getElementById('intro-overlay');
-            if (!overlay || sessionStorage.getItem('introDismissed')) { cargarApp(); return; }
+            if (sessionStorage.getItem('introDismissed')) { overlay.remove(); cargarApp(); return; }
+            if (!overlay) { cargarApp(); return; }
             document.getElementById('intro-skip').addEventListener('click', () => {
                 overlay.classList.add('fade-out');
                 sessionStorage.setItem('introDismissed', '1');

@@ -39,7 +39,8 @@
     <script>
         function initAuth() {
             const overlay = document.getElementById('intro-overlay');
-            if (!overlay || window.location.hash || sessionStorage.getItem('introDismissed')) {
+            if (sessionStorage.getItem('introDismissed')) { overlay.remove(); inicializarAuth(); return; }
+            if (!overlay || window.location.hash) {
                 overlay?.remove();
                 inicializarAuth();
                 return;
