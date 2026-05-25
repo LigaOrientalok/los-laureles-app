@@ -151,7 +151,7 @@ async function registrarUsuario(btn) {
     
     if (data?.user) {
       await _supabase.from('usuarios').upsert({
-        id: data.user.id, email: data.user.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
+        id: data.user.id, email: data.user.email, rol: 'usuario', estado: 'aprobado', fecha_registro: new Date().toISOString()
       });
     }
     

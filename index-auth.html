@@ -46,7 +46,7 @@
                 } catch(e) { userData = null; }
                 if (!userData) {
                     await _supabase.from('usuarios').upsert({
-                        id: session.user.id, email: session.user.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
+                        id: session.user.id, email: session.user.email, rol: 'usuario', estado: 'aprobado', fecha_registro: new Date().toISOString()
                     });
                     userData = { rol: 'usuario' };
                 }

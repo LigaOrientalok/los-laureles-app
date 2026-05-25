@@ -16,7 +16,7 @@ async function inicializarAuth() {
       } catch(e) { userData = null; }
       if (!userData) {
         await _supabase.from('usuarios').upsert({
-          id: usuarioActual.id, email: usuarioActual.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
+          id: usuarioActual.id, email: usuarioActual.email, rol: 'usuario', estado: 'aprobado', fecha_registro: new Date().toISOString()
         });
         userData = { rol: 'usuario' };
       }
@@ -143,7 +143,7 @@ async function registrarUsuario(btn) {
     
     if (data?.user) {
       await _supabase.from('usuarios').upsert({
-        id: data.user.id, email: data.user.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
+          id: data.user.id, email: data.user.email, rol: 'usuario', estado: 'aprobado', fecha_registro: new Date().toISOString()
       });
     }
     
