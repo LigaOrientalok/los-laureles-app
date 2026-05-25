@@ -47,7 +47,7 @@ function mostrarPanelLogin() {
   const app = document.getElementById('app');
   if (!app) return;
   app.innerHTML = `
-    <div style="min-height:100vh; background:#0b0e14; display:flex; justify-content:center; align-items:center; padding:20px;">
+    <div class="login-wrapper">
       <div style="background:#161b22; border:2px solid #eab308; border-radius:12px; padding:40px; width:100%; max-width:400px; box-shadow:0 15px 50px rgba(0,0,0,0.8);">
         <h1 style="text-align:center; color:#eab308; margin-bottom:30px;">🔐 LIGA ORIENTAL</h1>
         

@@ -52,6 +52,57 @@ td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
 .tabla-mini td { padding: 8px; font-size: 0.85rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .stat-val { text-align: right; font-weight: bold; color: var(--accent); }
 
+/* INTRO OVERLAY */
+#intro-overlay {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 99999;
+  background: #000;
+  display: flex; justify-content: center; align-items: center;
+  overflow: hidden;
+}
+#intro-overlay video {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0.6;
+}
+#intro-overlay .intro-logo {
+  position: relative; z-index: 1;
+  max-width: 300px; width: 80%;
+  opacity: 0.9;
+}
+#intro-overlay .intro-skip {
+  position: absolute; bottom: 40px; right: 40px;
+  padding: 12px 30px;
+  background: rgba(234, 179, 8, 0.9);
+  color: black; border: none; border-radius: 8px;
+  font-weight: bold; cursor: pointer; font-size: 1rem;
+  z-index: 2; transition: 0.3s;
+}
+#intro-overlay .intro-skip:hover { background: #eab308; }
+#intro-overlay.fade-out {
+  opacity: 0; transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+
+/* LOGO BACKGROUND ON LOGIN */
+.login-wrapper {
+  min-height: 100vh;
+  display: flex; justify-content: center; align-items: center;
+  padding: 20px;
+  position: relative;
+  background: #0b0e14;
+}
+.login-wrapper::before {
+  content: '';
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: url('../assets/img/liga.jpg') center/contain no-repeat;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
 /* 📱 RESPONSIVE */
 @media (max-width: 768px) {
   header { padding: 10px 0; }

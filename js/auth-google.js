@@ -36,7 +36,7 @@ function mostrarPanelLogin() {
   const app = document.getElementById('app');
   if (!app) return;
   app.innerHTML = `
-    <div style="min-height:100vh; background:linear-gradient(135deg, #0b0e14 0%, #161b22 100%); display:flex; justify-content:center; align-items:center; padding:20px;">
+    <div class="login-wrapper">
       <div style="background:#161b22; border:2px solid #eab308; border-radius:16px; padding:50px 40px; width:100%; max-width:450px; box-shadow:0 20px 60px rgba(0,0,0,0.9);">
         <h1 style="text-align:center; color:#eab308; margin-bottom:10px; font-size:2rem;">🔐</h1>
         <h2 style="text-align:center; color:#ffffff; margin-bottom:30px; font-size:1.8rem;">LIGA ORIENTAL</h2>
@@ -86,7 +86,7 @@ function mostrarFormRegistro() {
   const app = document.getElementById('app');
   if (!app) return;
   app.innerHTML = `
-    <div style="min-height:100vh; background:linear-gradient(135deg, #0b0e14 0%, #161b22 100%); display:flex; justify-content:center; align-items:center; padding:20px;">
+    <div class="login-wrapper">
       <div style="background:#161b22; border:2px solid #22c55e; border-radius:16px; padding:50px 40px; width:100%; max-width:450px; box-shadow:0 20px 60px rgba(0,0,0,0.9);">
         <h2 style="text-align:center; color:#22c55e; margin-bottom:30px; font-size:1.6rem;">Crear Cuenta</h2>
         
@@ -236,7 +236,7 @@ function mostrarPanelEnEspera() {
   const app = document.getElementById('app');
   if (!app) return;
   app.innerHTML = `
-    <div style="min-height:100vh; background:linear-gradient(135deg, #0b0e14 0%, #161b22 100%); display:flex; justify-content:center; align-items:center; padding:20px;">
+    <div class="login-wrapper">
       <div style="background:#161b22; border:2px solid #f97316; border-radius:16px; padding:50px 40px; width:100%; max-width:500px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.9);">
         <h1 style="color:#f97316; margin-bottom:20px; font-size:3rem;">⏳</h1>
         <h2 style="color:#ffffff; margin-bottom:15px;">Acceso Pendiente</h2>
@@ -280,5 +280,4 @@ function mostrarErrorReg(mensaje) {
   errorDiv.style.display = 'block';
 }
 
-// Inicializar
-document.addEventListener('DOMContentLoaded', inicializarAuth);
+// Inicializar (llamado desde el HTML después del intro)
