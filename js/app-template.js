@@ -71,6 +71,7 @@ function mostrarApp() {
         <div style="display:flex; gap:8px; align-items:center;">
           <button class="hamburger" id="hamburger-btn">☰</button>
           <button onclick="mostrarPerfil()" style="background:#30363d; color:white; padding:10px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.85rem;">👤</button>
+          <button onclick="mostrarNotificaciones()" id="notif-btn" style="background:#30363d; color:white; padding:10px 14px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.85rem; position:relative;">🔔<span id="notif-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;font-size:0.6rem;padding:2px 5px;border-radius:50%;font-weight:bold;"></span></button>
           <button onclick="logoutUsuario()" style="background:#ef4444; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🚪 Cerrar Sesión</button>
         </div>
       </div>
@@ -267,6 +268,7 @@ function mostrarApp() {
   setTimeout(async () => {
     await inicializarTorneos();
     await updateSelects();
+    verificarNotificaciones();
   }, 100);
 
   // Hamburger toggle

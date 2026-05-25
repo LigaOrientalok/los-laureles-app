@@ -353,6 +353,7 @@ window.cargarResultadoGlobal = async function() {
   
   mostrarErrorUsuario("✅ ¡Resultado guardado!");
   await recargarDatos();
+  verificarNotificaciones();
 };
 
 window.renderFama = async function() {
@@ -1159,4 +1160,56 @@ window.cambiarPassword = async function() {
   mostrarErrorUsuario('✅ Contraseña actualizada');
   document.getElementById('new-pass-1').value = '';
   document.getElementById('new-pass-2').value = '';
+};
+
+// Notificaciones
+window.verificarNotificaciones = async function() {
+  const badge = document.getElementById('notif-badge');
+  if (!badge || !torneoActual) return;
+  const lastCount = parseInt(localStorage.getItem('notif_count_' + torneoActual) || '0');
+  const resultados = await db.getResultados(torneoActual);
+  const nuevas = resultados.length - lastCount;
+  if (nuevas > 0) {
+    badge.textContent = nuevas;
+    badge.style.display = 'inline';
+  }
+};
+
+window.mostrarNotificaciones = async function() {
+  const overlay = document.createElement('div');
+  overlay.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;justify-content:center;align-items:center;z-index:1000;';
+  overlay.id = 'notif-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+
+  const resultados = await db.getResultados(torneoActual);
+  const fixture = await db.getFixture(torneoActual);
+  const equipos = await db.getEquipos(torneoActual);
+  const recientes = resultados.slice(-5).reverse();
+  const lastCount = parseInt(localStorage.getItem('notif_count_' + torneoActual) || '0');
+  const badge = document.getElementById('notif-badge');
+  if (badge) { badge.style.display = 'none'; badge.textContent = '0'; }
+  localStorage.setItem('notif_count_' + torneoActual, String(resultados.length));
+
+  overlay.innerHTML = `
+    <div style="background:#161b22; border:2px solid #eab308; border-radius:16px; padding:25px; max-width:420px; width:90%; max-height:80vh; overflow-y:auto; position:relative;">
+      <button onclick="this.closest('#notif-overlay').remove()" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
+      <h3 style="color:#eab308; margin:0 0 15px 0;">🔔 Últimos Resultados</h3>
+      ${recientes.length === 0 ? '<p style="color:#8b949e;font-size:0.85rem;">Sin resultados registrados</p>' :
+        recientes.map(r => {
+          const f = fixture.find(x => x.id === r.fixture_id);
+          const eqL = equipos.find(e => e.id === r.equipo_local_id);
+          const eqV = equipos.find(e => e.id === r.equipo_visitante_id);
+          return `
+            <div style="padding:10px; border-bottom:1px solid #30363d;">
+              <div style="font-size:0.75rem; color:#8b949e;">${escapeHtml(f?.fecha || f?.dia_semana || '—')}</div>
+              <div style="font-size:0.9rem; color:white;">
+                ${escapeHtml(eqL?.nombre || '?')} <b style="color:#eab308;">${r.goles_local}-${r.goles_visitante}</b> ${escapeHtml(eqV?.nombre || '?')}
+              </div>
+            </div>
+          `;
+        }).join('')
+      }
+    </div>
+  `;
+  document.body.appendChild(overlay);
 };
