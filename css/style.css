@@ -98,6 +98,37 @@ td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
   pointer-events: none;
 }
 
+/* FRAMES POR NIVEL */
+.frame-bronce .foto-frame {
+  box-shadow: 0 0 0 3px #cd7f32, 0 0 20px rgba(205, 127, 50, 0.4);
+}
+.frame-plata .foto-frame {
+  box-shadow: 0 0 0 3px #94a3b8, 0 0 20px rgba(148, 163, 184, 0.4);
+}
+.frame-oro .foto-frame {
+  box-shadow: 0 0 0 3px #eab308, 0 0 30px rgba(234, 179, 8, 0.5);
+}
+.frame-diamante .foto-frame {
+  box-shadow: 0 0 0 3px #8b5cf6, 0 0 30px rgba(139, 92, 246, 0.5);
+}
+.frame-diamante {
+  animation: framePulse 2s ease-in-out infinite;
+}
+@keyframes framePulse {
+  0%, 100% { box-shadow: 0 0 0 3px #8b5cf6, 0 0 20px rgba(139, 92, 246, 0.3); }
+  50% { box-shadow: 0 0 0 3px #a855f7, 0 0 40px rgba(168, 85, 247, 0.6); }
+}
+
+.nivel-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 12px; border-radius: 20px;
+  font-weight: bold; font-size: 0.7rem;
+}
+.nivel-badge-bronce { background: #cd7f3222; color: #cd7f32; border: 1px solid #cd7f32; }
+.nivel-badge-plata { background: #94a3b822; color: #94a3b8; border: 1px solid #94a3b8; }
+.nivel-badge-oro { background: #eab30822; color: #eab308; border: 1px solid #eab308; }
+.nivel-badge-diamante { background: #8b5cf622; color: #8b5cf6; border: 1px solid #8b5cf6; }
+
 /* LOGO BACKGROUND ON LOGIN */
 .login-wrapper {
   min-height: 100vh;

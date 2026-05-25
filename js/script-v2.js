@@ -371,13 +371,20 @@ window.renderFama = async function() {
     return eq?.logo || '';
   };
 
-  document.getElementById('renderFama').innerHTML = cracks.map(j => `
-    <div class="ficha-ea">
+  document.getElementById('renderFama').innerHTML = cracks.map(j => {
+    const xp = typeof calcularXP === 'function' ? calcularXP(j) : 0;
+    const nivel = typeof calcularNivel === 'function' ? calcularNivel(xp) : 1;
+    const frameClass = typeof getFrameClass === 'function' ? getFrameClass(nivel) : '';
+    const nivelColor = typeof getNivelColor === 'function' ? getNivelColor(nivel) : '#8b949e';
+    const nivelLabel = typeof getNivelLabel === 'function' ? getNivelLabel(nivel) : '';
+    return `
+    <div class="ficha-ea ${frameClass}">
       <div class="card-badge">
         <div class="rating">${calcularRating(j)}</div>
         <div class="pos">${escapeHtml(j.posicion)}</div>
       </div>
-      <img src="${j.foto}" class="perfil-ea">
+      <img src="${j.foto}" class="perfil-ea foto-frame">
+      <span style="position:absolute;top:20px;right:20px;background:${nivelColor};color:black;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:bold;z-index:5;">Lv.${nivel}</span>
       <img src="${logoEq(j)}" style="position:absolute;bottom:80px;right:10px;width:32px;height:32px;border-radius:50%;border:2px solid #eab308;background:#0d1117;object-fit:cover;" onerror="this.style.display='none'">
       <div class="info-jugador-ea">
         <h3>${escapeHtml(j.nombre)}</h3>
@@ -387,10 +394,12 @@ window.renderFama = async function() {
         </div>
       </div>
     </div>
-  `).join('');
+    `;
+  }).join('');
 };
 
 function calcularRating(j) {
+  if (typeof calcularRatingConNivel === 'function') return calcularRatingConNivel(j);
   let media = 60 + (j.goles * 0.5) + (j.pj * 0.2) + ((j.mvps || 0) * 2.0);
   media -= ((j.amarillas || 0) * 0.5) + ((j.rojas || 0) * 2.0);
   return Math.min(99, Math.max(10, Math.round(media)));
@@ -1014,6 +1023,11 @@ window.mostrarDetalleJugador = async function(jugadorId) {
   const equiposJug = j.equipos?.map(eId => equipos.find(e => e.id === eId)).filter(Boolean) || [];
   const posMap = { POR: 'Portero', DFC: 'Defensa', MC: 'Mediocampista', DEL: 'Delantero' };
   const pieMap = { R: 'Diestro', L: 'Zurdo' };
+  const xpPlayer = typeof calcularXP === 'function' ? calcularXP(j) : 0;
+  const nivelPlayer = typeof calcularNivel === 'function' ? calcularNivel(xpPlayer) : 1;
+  const frameClass = typeof getFrameClass === 'function' ? getFrameClass(nivelPlayer) : '';
+  const nivelColor = typeof getNivelColor === 'function' ? getNivelColor(nivelPlayer) : '#8b949e';
+  const nivelLabel = typeof getNivelLabel === 'function' ? getNivelLabel(nivelPlayer) : '';
 
   const overlay = document.createElement('div');
   overlay.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;justify-content:center;align-items:center;z-index:1000;';
@@ -1024,7 +1038,10 @@ window.mostrarDetalleJugador = async function(jugadorId) {
     <div style="background:#161b22; border:2px solid #eab308; border-radius:16px; padding:30px; max-width:520px; width:90%; max-height:90vh; overflow-y:auto; position:relative;">
       <button onclick="this.closest('#player-detail-overlay').remove()" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
       <div style="text-align:center; margin-bottom:20px;">
-        <img src="${j.foto || DEFAULT_AVATAR}" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid #eab308; margin-bottom:10px;">
+        <div style="display:inline-block; position:relative;" class="${frameClass}">
+          <img src="${j.foto || DEFAULT_AVATAR}" style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:3px solid #eab308; margin-bottom:10px;" class="foto-frame">
+          <span style="position:absolute;bottom:8px;right:-4px;background:${nivelColor};color:black;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:bold;z-index:5;white-space:nowrap;">Lv.${nivelPlayer}</span>
+        </div>
         <h2 style="color:#eab308; margin:5px 0;">${escapeHtml(j.nombre)}</h2>
         <div style="display:flex; justify-content:center; gap:10px; margin:5px 0;">
           <span style="background:#3b82f6; padding:2px 12px; border-radius:4px; font-size:0.8rem;">${escapeHtml(posMap[j.posicion] || j.posicion)}</span>
@@ -1039,7 +1056,7 @@ window.mostrarDetalleJugador = async function(jugadorId) {
           `).join('')}
         </div>
       </div>
-      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:20px;">
+      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:10px;">
         <div style="background:#0d1117; border-radius:8px; padding:12px; text-align:center;">
           <div style="font-size:1.5rem; font-weight:bold; color:#22c55e;">${j.goles || 0}</div>
           <div style="font-size:0.7rem; color:#8b949e;">GOLES</div>
@@ -1065,7 +1082,46 @@ window.mostrarDetalleJugador = async function(jugadorId) {
           <div style="font-size:0.7rem; color:#8b949e;">ROJAS</div>
         </div>
       </div>
-      <div style="background:#0d1117; border-radius:8px; padding:15px; margin-bottom:15px;">
+      ${(() => {
+        const xp = calcularXP(j);
+        const nivel = calcularNivel(xp);
+        const sigXp = xpParaSiguienteNivel(nivel);
+        const antXp = xpParaSiguienteNivel(nivel - 1);
+        const progreso = Math.min(100, ((xp - antXp) / (sigXp - antXp)) * 100);
+        const nivelColor = getNivelColor(nivel);
+        const nivelLabel = getNivelLabel(nivel);
+        const misiones = misionesCompletadas(j);
+        const completadas = misiones.filter(m => m.completada).length;
+        const totalXpMisiones = xpDeMisiones(j);
+        return `
+        <div style="background:#0d1117; border-radius:8px; padding:15px; margin-bottom:10px; text-align:center;">
+          <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:8px;">
+            <span style="font-size:2rem; font-weight:bold; color:${nivelColor};">${nivel}</span>
+            <span style="background:${nivelColor}; color:black; padding:4px 16px; border-radius:20px; font-weight:bold; font-size:0.75rem;">${nivelLabel}</span>
+          </div>
+          <div style="background:#21262d; border-radius:10px; height:16px; overflow:hidden; margin-bottom:4px;">
+            <div style="width:${progreso}%; height:100%; background:linear-gradient(90deg, ${nivelColor}, #eab308); border-radius:10px; transition:width 0.5s;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#8b949e;">
+            <span>${xp} XP</span>
+            <span>${sigXp} XP</span>
+          </div>
+        </div>
+        <div style="background:#0d1117; border-radius:8px; padding:15px; margin-bottom:10px;">
+          <h4 style="color:#eab308; margin:0 0 10px 0;">🎯 Misiones (${completadas}/${misiones.length})</h4>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px;">
+            ${misiones.map(m => `
+              <div style="display:flex; align-items:center; gap:6px; padding:6px; border-radius:6px; background:${m.completada ? '#22c55e22' : '#21262d'}; font-size:0.75rem; ${m.completada ? '' : 'opacity:0.5;'}">
+                <span>${m.icon}</span>
+                <span style="color:${m.completada ? '#22c55e' : '#8b949e'};">${m.label}</span>
+                <span style="margin-left:auto; font-size:0.65rem; color:${m.completada ? '#22c55e' : '#8b949e'};">${m.completada ? `+${m.xp}XP` : '—'}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        `;
+      })()}
+      <div style="background:#0d1117; border-radius:8px; padding:15px; margin-bottom:10px;">
         <h4 style="color:#eab308; margin:0 0 10px 0;">📊 Estadísticas</h4>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; font-size:0.85rem;">
           <span style="color:#8b949e;">Goles por partido:</span><span style="color:white; font-weight:bold; text-align:right;">${j.pj > 0 ? (j.goles / j.pj).toFixed(2) : '0.00'}</span>
