@@ -80,67 +80,6 @@
             }
         }
 
-        async function mostrarGestionUsuarios() {
-            const cont = document.getElementById('admin-content');
-            if (!cont) return;
-            cont.innerHTML = '<p style="color:#b0bcc4;">Cargando usuarios...</p>';
-            try {
-                const { data: usuarios, error } = await _supabase.from('usuarios').select('*').order('fecha_registro', { ascending: false });
-                if (error) { cont.innerHTML = '<p style="color:#ef4444;">Error: ' + error.message + '</p>'; return; }
-
-                const statsHtml = `
-                    <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:15px;">
-                        <div class="box" style="text-align:center; padding:10px;">
-                            <h3 style="color:#3b82f6; font-size:1.3rem; margin:0;">${usuarios.length}</h3>
-                            <p style="color:#b0bcc4; margin:5px 0 0; font-size:0.8rem;">Total</p>
-                        </div>
-                        <div class="box" style="text-align:center; padding:10px;">
-                            <h3 style="color:#22c55e; font-size:1.3rem; margin:0;">${usuarios.filter(u => u.estado === 'aprobado').length}</h3>
-                            <p style="color:#b0bcc4; margin:5px 0 0; font-size:0.8rem;">Aprobados</p>
-                        </div>
-                        <div class="box" style="text-align:center; padding:10px;">
-                            <h3 style="color:#f97316; font-size:1.3rem; margin:0;">${usuarios.filter(u => u.estado === 'pendiente').length}</h3>
-                            <p style="color:#b0bcc4; margin:5px 0 0; font-size:0.8rem;">Pendientes</p>
-                        </div>
-                    </div>`;
-
-                cont.innerHTML = statsHtml + `
-                    <div style="overflow-x:auto;">
-                        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
-                            <thead><tr style="background:#30363d;">
-                                <th style="padding:8px; color:#eab308; text-align:left;">Email</th>
-                                <th style="padding:8px; color:#eab308; text-align:center;">Rol</th>
-                                <th style="padding:8px; color:#eab308; text-align:center;">Estado</th>
-                                <th style="padding:8px; color:#eab308; text-align:center;">Acciones</th>
-                            </tr></thead>
-                            <tbody>${usuarios.map(u => `
-                                <tr style="border-bottom:1px solid #30363d;">
-                                    <td style="padding:8px;">${escapeHtml(u.email)}</td>
-                                    <td style="padding:8px; text-align:center;">
-                                        <select onchange="cambiarRol('${u.id}', this.value)" style="padding:4px; background:#0d1117; color:white; border:1px solid #30363d; border-radius:4px; font-size:0.8rem;">
-                                            <option value="usuario" ${u.rol === 'usuario' ? 'selected' : ''}>Usuario</option>
-                                            <option value="arbitro" ${u.rol === 'arbitro' ? 'selected' : ''}>Árbitro</option>
-                                            <option value="admin" ${u.rol === 'admin' ? 'selected' : ''}>Admin</option>
-                                        </select>
-                                    </td>
-                                    <td style="padding:8px; text-align:center;">
-                                        <select onchange="cambiarEstado('${u.id}', this.value)" style="padding:4px; background:#0d1117; color:white; border:1px solid #30363d; border-radius:4px; font-size:0.8rem;">
-                                            <option value="pendiente" ${u.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
-                                            <option value="aprobado" ${u.estado === 'aprobado' ? 'selected' : ''}>Aprobado</option>
-                                            <option value="rechazado" ${u.estado === 'rechazado' ? 'selected' : ''}>Rechazado</option>
-                                        </select>
-                                    </td>
-                                    <td style="padding:8px; text-align:center;">
-                                        <button onclick="eliminarUsuario(this.dataset.uid, this.dataset.uemail)" data-uid="${u.id}" data-uemail="${escapeHtml(u.email)}" style="background:#ef4444; color:white; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:0.8rem;">Eliminar</button>
-                                    </td>
-                                </tr>`).join('')}</tbody>
-                        </table>
-                    </div>`;
-            } catch (e) {
-                cont.innerHTML = '<p style="color:#ef4444;">Error de conexión</p>';
-            }
-        }
-
         function mostrarApp() {
             const app = document.getElementById('app');
             if (!app) return;
@@ -188,9 +127,9 @@
                             <div class="box" style="flex:1; min-width:300px;">
                                 <h2>Registro de Jugador</h2>
                                 <label class="label-accent">CI del Jugador:</label>
-                                <input type="number" id="regCI" placeholder="Cédula de Identidad" oninput="updatePreview()">
+                                <input type="number" id="regCI" placeholder="Cédula de Identidad" oninput="debouncedUpdatePreview()">
                                 <label class="label-accent">Nombre:</label>
-                                <input type="text" id="regNom" placeholder="Nombre completo" oninput="updatePreview()">
+                                <input type="text" id="regNom" placeholder="Nombre completo" oninput="debouncedUpdatePreview()">
                                 <div style="display: flex; gap: 10px;">
                                     <div style="flex:1">
                                         <label class="label-accent">Posición:</label>
@@ -213,7 +152,7 @@
                                 <select id="regEqSelect" onchange="updatePreview()"></select>
                                 <label class="label-accent">Foto:</label>
                                 <input type="file" id="regFoto" accept="image/*" onchange="previewImage(this)">
-                                <button class="btn-main" onclick="savePlayer()">VINCULAR / CREAR FICHA</button>
+                                <button class="btn-main" onclick="savePlayer(this)">VINCULAR / CREAR FICHA</button>
                             </div>
 
                             <!-- Preview Card -->
@@ -281,7 +220,7 @@
                                 <div><label class="label-accent">Día:</label><select id="fixDiaGen"><option>Lunes</option><option value="Miercoles">Miércoles</option><option>Jueves</option><option>Viernes</option><option value="Sabado">Sábado</option><option>Domingo</option></select></div>
                                 <div><label class="label-accent">Hora inicio:</label><input type="time" id="fixHoraInicio" value="20:00" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;"></div>
                                 <div><label class="label-accent">Duración (min):</label><input type="number" id="fixDuracion" value="30" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; width:80px;"></div>
-                                <button onclick="generarFixtureAuto()" class="btn-mini" style="background:#22c55e; color:white;">Generar Fixture</button>
+                                <button onclick="generarFixtureAuto(this)" class="btn-mini" style="background:#22c55e; color:white;">Generar Fixture</button>
                             </div>
                         </div>
 
