@@ -504,8 +504,8 @@ window.mostrarMisiones = async function() {
       <label class="label-accent">Seleccioná un jugador:</label>
       <input type="text" id="misiones-search" placeholder="🔍 Buscar jugador..." oninput="filtrarMisionesJugadores(this.value)" style="margin-bottom:6px;">
       <select id="misiones-select" onchange="cargarMisionesJugador(this.value, null)" style="margin-bottom:15px;">
-        <option value="">— Elegir jugador —</option>
-        ${jugadores.map(j => `<option value="${j.id}">${escapeHtml(j.nombre)} ${j.posicion === 'POR' ? '🧤' : '⚽'}</option>`).join('')}
+        <option value="-1">— Elegir jugador —</option>
+        ${jugadores.map((j, idx) => `<option value="${idx}">${escapeHtml(j.nombre)} ${j.posicion === 'POR' ? '🧤' : '⚽'}</option>`).join('')}
       </select>
       <div id="misiones-content" style="text-align:center; color:#8b949e; padding:20px;">
         Seleccioná un jugador para ver sus misiones
@@ -516,8 +516,9 @@ window.mostrarMisiones = async function() {
 
   const nameMatch = jugadores.find(j => userEmail.toLowerCase().includes(j.nombre.toLowerCase().split(' ')[0].toLowerCase()));
   if (nameMatch && jugadores.length > 0) {
-    document.getElementById('misiones-select').value = nameMatch.id;
-    await cargarMisionesJugador(null, nameMatch);
+    const matchIdx = jugadores.indexOf(nameMatch);
+    document.getElementById('misiones-select').value = String(matchIdx);
+    await cargarMisionesJugador(String(matchIdx), null);
   }
 };
 
@@ -526,20 +527,25 @@ window.filtrarMisionesJugadores = function(text) {
   if (!select) return;
   const jugadores = window._misionesJugadores || [];
   const term = text.toLowerCase().trim();
-  select.innerHTML = '<option value="">— Elegir jugador —</option>' +
-    jugadores
-      .filter(j => !term || j.nombre.toLowerCase().includes(term))
-      .map(j => `<option value="${j.id}" data-nombre="${escapeHtml(j.nombre)}" data-pos="${j.posicion}">${escapeHtml(j.nombre)} ${j.posicion === 'POR' ? '🧤' : '⚽'}</option>`)
+  const filtrados = jugadores.filter(j => !term || j.nombre.toLowerCase().includes(term));
+  select.innerHTML = '<option value="-1">— Elegir jugador —</option>' +
+    filtrados
+      .map(j => `<option value="${jugadores.indexOf(j)}">${escapeHtml(j.nombre)} ${j.posicion === 'POR' ? '🧤' : '⚽'}</option>`)
       .join('');
+  if (filtrados.length === 1) {
+    select.value = String(jugadores.indexOf(filtrados[0]));
+    cargarMisionesJugador(select.value, null);
+  }
 };
 
 window.cargarMisionesJugador = async function(jugadorId, jugadorObj) {
   const cont = document.getElementById('misiones-content');
   if (!cont) return;
 
-  if (!jugadorObj && jugadorId) {
+  if (!jugadorObj && jugadorId !== null && jugadorId !== '-1') {
     const jugadores = window._misionesJugadores || [];
-    jugadorObj = jugadores.find(j => String(j.id) === String(jugadorId) || j.id == jugadorId);
+    const idx = parseInt(jugadorId);
+    jugadorObj = jugadores[idx];
   }
   if (!jugadorObj) { cont.innerHTML = '<p style="color:#ef4444;">Jugador no encontrado</p>'; return; }
 
