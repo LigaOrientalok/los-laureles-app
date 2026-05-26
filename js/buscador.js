@@ -99,7 +99,7 @@ window.initFloatingSearch = function() {
   });
 
   document.addEventListener('click', function(e) {
-    if (!e.target.closest('#floating-search')) cerrarDropdownFlotante();
+    if (!e.target.closest('#floating-search-bar')) cerrarDropdownFlotante();
   });
 };
 
