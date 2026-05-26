@@ -114,6 +114,18 @@ td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
 .frame-diamante {
   animation: framePulse 2s ease-in-out infinite;
 }
+.frame-campeon {
+  border-color: #eab308 !important;
+  box-shadow: 0 0 0 3px #eab308, 0 0 30px rgba(234, 179, 8, 0.5), inset 0 0 30px rgba(234, 179, 8, 0.05);
+  animation: champGlow 2s ease-in-out infinite;
+}
+.frame-campeon .foto-frame {
+  box-shadow: 0 0 0 3px #eab308, 0 0 25px rgba(234, 179, 8, 0.6);
+}
+@keyframes champGlow {
+  0%, 100% { box-shadow: 0 0 0 3px #eab308, 0 0 20px rgba(234, 179, 8, 0.3), inset 0 0 20px rgba(234, 179, 8, 0.02); }
+  50% { box-shadow: 0 0 0 3px #fbbf24, 0 0 40px rgba(234, 179, 8, 0.6), inset 0 0 40px rgba(234, 179, 8, 0.08); }
+}
 @keyframes framePulse {
   0%, 100% { box-shadow: 0 0 0 3px #8b5cf6, 0 0 20px rgba(139, 92, 246, 0.3); }
   50% { box-shadow: 0 0 0 3px #a855f7, 0 0 40px rgba(168, 85, 247, 0.6); }

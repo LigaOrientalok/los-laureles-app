@@ -371,12 +371,19 @@ window.renderFama = async function() {
     return eq?.logo || '';
   };
 
+  // Detect champion team for frames
+  let championTeams = [];
+  if (equipos.length > 0) {
+    const maxPts = Math.max(...equipos.filter(e => e.pj > 0).map(e => e.pts || 0));
+    championTeams = equipos.filter(e => (e.pts || 0) === maxPts && e.pj > 0).map(e => e.id);
+  }
+
   document.getElementById('renderFama').innerHTML = cracks.map(j => {
     const xp = typeof calcularXP === 'function' ? calcularXP(j) : 0;
     const nivel = typeof calcularNivel === 'function' ? calcularNivel(xp) : 1;
-    const frameClass = typeof getFrameClass === 'function' ? getFrameClass(nivel) : '';
+    const esCampeon = championTeams.length > 0 && (j.equipos || []).some(eId => championTeams.includes(eId));
+    const frameClass = typeof getFrameClass === 'function' ? getFrameClass(nivel, esCampeon) : '';
     const nivelColor = typeof getNivelColor === 'function' ? getNivelColor(nivel) : '#8b949e';
-    const nivelLabel = typeof getNivelLabel === 'function' ? getNivelLabel(nivel) : '';
     return `
     <div class="ficha-ea ${frameClass}">
       <div class="card-badge">
@@ -385,6 +392,7 @@ window.renderFama = async function() {
       </div>
       <img src="${j.foto}" class="perfil-ea foto-frame">
       <span style="position:absolute;top:20px;right:20px;background:${nivelColor};color:black;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:bold;z-index:5;">Lv.${nivel}</span>
+      ${esCampeon ? '<span style="position:absolute;top:18px;left:18px;font-size:1.8rem;z-index:5;filter:drop-shadow(0 0 6px rgba(234,179,8,0.8));">👑</span>' : ''}
       <img src="${logoEq(j)}" style="position:absolute;bottom:80px;right:10px;width:32px;height:32px;border-radius:50%;border:2px solid #eab308;background:#0d1117;object-fit:cover;" onerror="this.style.display='none'">
       <div class="info-jugador-ea">
         <h3>${escapeHtml(j.nombre)}</h3>
@@ -1004,8 +1012,10 @@ window.mostrarDetalleJugador = async function(jugadorId) {
   const j = jugadores.find(x => x.id === jugadorId);
   if (!j) return;
 
-  const extraStats = typeof computeExtraStats === 'function' ? await computeExtraStats(j, torneoActual) : { vallas_invictas: 0, hattricks: 0 };
+  const preloaded = { equipos, jugadores, resultados, fixture, allGoles: allGolesResp?.data || [], allTarjetas: allTarjetasResp?.data || [] };
+  const extraStats = typeof computeExtraStats === 'function' ? await computeExtraStats(j, torneoActual, preloaded) : {};
   Object.assign(j, extraStats);
+  const missionCtx = typeof computePlayerContext === 'function' ? await computePlayerContext(j, torneoActual, preloaded) : {};
 
   const golesList = allGoles?.data?.filter(g => g.jugador_id === jugadorId) || [];
   const tarjetasList = allTarjetas?.data?.filter(t => t.jugador_id === jugadorId) || [];
@@ -1093,7 +1103,7 @@ window.mostrarDetalleJugador = async function(jugadorId) {
         const progreso = Math.min(100, ((xp - antXp) / (sigXp - antXp)) * 100);
         const nivelColor = getNivelColor(nivel);
         const nivelLabel = getNivelLabel(nivel);
-        const misiones = misionesCompletadas(j, j.posicion);
+        const misiones = misionesCompletadas(j, j.posicion, missionCtx);
         const completadas = misiones.filter(m => m.completada).length;
         const totalXpMisiones = xpDeMisiones(j);
         return `
