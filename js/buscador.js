@@ -77,9 +77,31 @@ window.renderBuscador = async function() {
 let _floatSearchTimer = null;
 
 window.initFloatingSearch = function() {
-  const input = document.getElementById('floating-search-input');
-  const dropdown = document.getElementById('floating-search-dropdown');
-  if (!input || !dropdown) return;
+  if (document.getElementById('floating-search-input')) return;
+
+  const wrap = document.createElement('div');
+  wrap.id = 'floating-search-wrap';
+  wrap.style.cssText = 'display:flex; gap:10px; justify-content:center; background:#161b22; padding:10px 16px; border-bottom:1px solid #21262d;';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.id = 'floating-search-input';
+  input.placeholder = '🔍 Buscar jugador...';
+  input.autocomplete = 'off';
+  input.style.cssText = 'width:100%; max-width:400px; padding:10px 14px; border-radius:8px; background:#0d1117; color:white; border:1px solid #eab308; font-size:0.9rem; box-sizing:border-box;';
+  wrap.appendChild(input);
+
+  const dropdown = document.createElement('div');
+  dropdown.id = 'floating-search-dropdown';
+  dropdown.style.cssText = 'display:none; position:absolute; top:100%; left:50%; transform:translateX(-50%); width:min(100%,420px); background:#161b22; border:1px solid #30363d; border-radius:0 0 8px 8px; max-height:320px; overflow-y:auto; z-index:200; box-shadow:0 8px 30px rgba(0,0,0,0.5);';
+  wrap.appendChild(dropdown);
+
+  const header = document.querySelector('header');
+  if (header && header.parentNode) {
+    header.parentNode.insertBefore(wrap, header.nextSibling);
+  } else {
+    document.getElementById('app')?.appendChild(wrap);
+  }
 
   input.addEventListener('input', function() {
     clearTimeout(_floatSearchTimer);
@@ -99,7 +121,7 @@ window.initFloatingSearch = function() {
   });
 
   document.addEventListener('click', function(e) {
-    if (!e.target.closest('#floating-search-input') && !e.target.closest('#floating-search-dropdown')) cerrarDropdownFlotante();
+    if (!e.target.closest('#floating-search-wrap')) cerrarDropdownFlotante();
   });
 };
 
