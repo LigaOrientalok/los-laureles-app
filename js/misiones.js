@@ -498,16 +498,16 @@ window.mostrarMisiones = async function() {
   overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
 
   overlay.innerHTML = `
-    <div style="background:#161b22; border:2px solid #eab308; border-radius:16px; padding:25px; max-width:500px; width:90%; max-height:90vh; overflow-y:auto; position:relative;">
-      <button onclick="this.closest('#misiones-overlay').remove()" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
-      <h2 style="color:#eab308; text-align:center; margin:0 0 15px 0;">🎯 Misiones</h2>
+    <div style="background:#161b22; border:2px solid #eab308; border-radius:12px; padding:16px; max-width:520px; width:92%; max-height:95vh; overflow-y:auto; position:relative;">
+      <button onclick="this.closest('#misiones-overlay').remove()" style="position:absolute;top:8px;right:8px;background:#ef4444;color:white;border:none;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:1rem;line-height:28px;text-align:center;">✕</button>
+      <h2 style="color:#eab308; text-align:center; margin:0 0 10px 0;">🎯 Misiones</h2>
       <label class="label-accent">Seleccioná un jugador:</label>
-      <input type="text" id="misiones-search" placeholder="🔍 Buscar jugador..." oninput="filtrarMisionesJugadores(this.value)" style="margin-bottom:6px;">
-      <select id="misiones-select" onchange="cargarMisionesJugador(this.value, null)" style="margin-bottom:15px;">
+      <input type="text" id="misiones-search" placeholder="🔍 Buscar jugador..." oninput="filtrarMisionesJugadores(this.value)" style="margin-bottom:4px;">
+      <select id="misiones-select" onchange="cargarMisionesJugador(this.value, null)" style="margin-bottom:10px;">
         <option value="-1">— Elegir jugador —</option>
         ${jugadores.map((j, idx) => `<option value="${idx}">${escapeHtml(j.nombre)} ${j.posicion === 'POR' ? '🧤' : '⚽'}</option>`).join('')}
       </select>
-      <div id="misiones-content" style="text-align:center; color:#8b949e; padding:20px;">
+      <div id="misiones-content" style="text-align:center; color:#8b949e;">
         Seleccioná un jugador para ver sus misiones
       </div>
     </div>
@@ -569,41 +569,40 @@ window.cargarMisionesJugador = async function(jugadorId, jugadorObj) {
     if (ctx?.menosVencido) badges.push('<span style="background:#3b82f6;color:white;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:bold;">🧤 MENOS VENCIDO</span>');
 
     cont.innerHTML = `
-      <div style="text-align:center; margin-bottom:15px;">
-        <img src="${jugador.foto || DEFAULT_AVATAR_MISSIONS}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid ${ctx?.esCampeon ? '#eab308' : nivelColor};margin-bottom:10px;">
-        <h3 style="color:#eab308; margin:5px 0;">${escapeHtml(jugador.nombre)}</h3>
-        <span style="color:#8b949e; font-size:0.85rem;">${posLabel}</span>
-        ${badges.length > 0 ? '<div style="display:flex;justify-content:center;gap:6px;margin-top:6px;">' + badges.join('') + '</div>' : ''}
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; text-align:left;">
+        <img src="${jugador.foto || DEFAULT_AVATAR_MISSIONS}" style="width:50px;height:50px;border-radius:50%;object-fit:cover;border:2px solid ${ctx?.esCampeon ? '#eab308' : nivelColor};flex-shrink:0;">
+        <div style="flex:1;">
+          <div style="color:#eab308; font-weight:bold; font-size:0.95rem;">${escapeHtml(jugador.nombre)}</div>
+          <div style="color:#8b949e; font-size:0.75rem;">${posLabel}</div>
+          ${badges.length > 0 ? '<div style="display:flex;gap:4px;margin-top:4px;">' + badges.join('') + '</div>' : ''}
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:1.6rem; font-weight:bold; color:${nivelColor};">${nivel}</div>
+          <div style="background:${nivelColor}; color:black; padding:2px 10px; border-radius:12px; font-weight:bold; font-size:0.6rem; white-space:nowrap;">${nivelLabel}</div>
+        </div>
       </div>
 
-      <div style="background:#0d1117; border-radius:8px; padding:15px; margin-bottom:15px; text-align:center;">
-        <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:8px;">
-          <span style="font-size:2.5rem; font-weight:bold; color:${nivelColor};">${nivel}</span>
-          <span style="background:${nivelColor}; color:black; padding:4px 16px; border-radius:20px; font-weight:bold; font-size:0.75rem;">${nivelLabel}</span>
-        </div>
-        <div style="background:#21262d; border-radius:10px; height:16px; overflow:hidden; margin-bottom:4px;">
-          <div style="width:${progreso}%; height:100%; background:linear-gradient(90deg, ${nivelColor}, #eab308); border-radius:10px; transition:width 0.5s;"></div>
-        </div>
-        <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:#8b949e;">
+      <div style="background:#0d1117; border-radius:6px; padding:10px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; font-size:0.65rem; color:#8b949e; margin-bottom:3px;">
           <span>${xp} XP</span>
           <span>${sigXp} XP</span>
         </div>
+        <div style="background:#21262d; border-radius:8px; height:10px; overflow:hidden;">
+          <div style="width:${progreso}%; height:100%; background:linear-gradient(90deg, ${nivelColor}, #eab308); border-radius:8px; transition:width 0.5s;"></div>
+        </div>
       </div>
 
-      <h4 style="color:#eab308; margin:0 0 10px 0;">🎯 Misiones (${completadas}/${totalMisiones})</h4>
-      <div style="display:flex; flex-direction:column; gap:6px;">
+      <h4 style="color:#eab308; margin:0 0 8px 0; font-size:0.9rem;">🎯 Misiones (${completadas}/${totalMisiones})</h4>
+      <div style="display:flex; flex-direction:column; gap:4px;">
         ${misiones.map(m => {
           const done = m.completada;
           return `
-            <div style="display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; background:${done ? '#22c55e22' : '#0d1117'}; border:1px solid ${done ? '#22c55e44' : '#30363d'};">
-              <span style="font-size:1.1rem; width:24px; text-align:center;">${m.icon}</span>
+            <div style="display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:6px; background:${done ? '#22c55e22' : '#0d1117'}; border:1px solid ${done ? '#22c55e44' : '#30363d'};">
+              <span style="font-size:0.95rem; width:20px; text-align:center;">${m.icon}</span>
               <div style="flex:1; min-width:0;">
-                <div style="font-size:0.85rem; color:${done ? '#22c55e' : '#e0e0e0'}; font-weight:${done ? 'bold' : 'normal'};">${escapeHtml(m.label)}</div>
-                <div style="font-size:0.65rem; color:#8b949e;">${m.xp} XP</div>
+                <div style="font-size:0.8rem; color:${done ? '#22c55e' : '#e0e0e0'}; font-weight:${done ? 'bold' : 'normal'};">${escapeHtml(m.label)}</div>
               </div>
-              <span style="font-size:1rem;">
-                ${done ? '✅' : '⏳'}
-              </span>
+              <span style="font-size:0.75rem;">${done ? '✅' : '⏳'}</span>
             </div>
           `;
         }).join('')}
