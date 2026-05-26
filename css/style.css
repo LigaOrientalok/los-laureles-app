@@ -354,26 +354,13 @@ td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
   }
 }
 
-/* FLOATING SEARCH */
-#floating-search-bar {
-  position: sticky; top: 0; z-index: 99;
-  background: rgba(0,0,0,0.85); backdrop-filter: blur(10px);
-  padding: 8px 16px; border-bottom: 1px solid #21262d;
-}
-#floating-search-bar #floating-search-input {
-  max-width: 400px; margin: 0 auto; display: block;
-}
+/* FLOATING SEARCH (toolbar) */
 #floating-search-dropdown {
-  display: none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-  width: min(100%, 420px); background: #161b22;
-  border: 1px solid #30363d; border-radius: 0 0 8px 8px;
+  display: none; position: absolute; top: 100%; left: 0; right: 0;
+  background: #161b22; border: 1px solid #30363d; border-radius: 0 0 8px 8px;
   max-height: 320px; overflow-y: auto; z-index: 200;
   box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-}
-#floating-search-input {
-  width: 100%; padding: 10px 14px; border-radius: 8px;
-  background: #0d1117; color: white; border: 1px solid #30363d;
-  font-size: 0.9rem; box-sizing: border-box; transition: border-color 0.2s;
+  margin-top: 2px;
 }
 #floating-search-input:focus { outline: none; border-color: #eab308; }
 .float-result {
