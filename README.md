@@ -1,120 +1,54 @@
-# Liga Oriental - Los Laureles App
+# Liga Oriental — Los Laureles App
 
-**Aplicación Web para Gestión de Liga de Fútbol**
+**Aplicación web progresiva (PWA)** para gestión de torneos de fútbol amateur.
 
-## 📋 Descripción
+## Características
 
-Liga Oriental es una aplicación web completa para gestionar ligas de fútbol amateur, permitiendo:
+- **Registro de jugadores** con foto, posición, pierna y asignación a equipo
+- **Equipos** con logo, tabla de posiciones por día (PTS, PJ, V, E, P, GF, GC, DF)
+- **Fixture** automático por día y horario
+- **Carga de resultados** con goles por jugador, tarjetas y MVP
+- **Estadísticas** con gráficos (Chart.js): goleadores, ranking equipos, evolución
+- **Salón de la Fama** — cartas estilo EA Sports con rating dinámico
+- **Buscador de jugadores** con filtros por nombre, posición y equipo
+- **Historial de torneos** — campeón, goleador y MVP de cada torneo
+- **Misiones + XP + Niveles** — 75 misiones (general, campo, portero) con marcos por nivel
+- **Panel Admin** — gestión de usuarios, jugadores, equipos; respaldo/recomputo de stats
+- **Autenticación** por email y Google OAuth
+- **PWA** — instalable con service worker y manifest.json
+- **Roles**: usuario, árbitro y admin con vistas restringidas
+- **Notificaciones** de nuevas funcionalidades
 
-- 📝 Registro y gestión de jugadores
-- ⚽ Creación de equipos
-- 📅 Generación automática de fixtures/calendarios
-- 📊 Carga de resultados y estadísticas
-- 🏆 Rankings de goleadores y mejores jugadores
-- 🎖️ Hall de la fama
-- 💾 Almacenamiento local de datos
+## Tecnología
 
-## 🚀 Características Principales
+- HTML5 + CSS3 + JavaScript vanilla
+- Supabase (auth, base de datos, RLS policies)
+- Chart.js para gráficos
+- PWA con manifest.json + service worker
+- Desplegado en Vercel
 
-### 1. Registro de Jugadores
-- Ingreso de cédula de identidad
-- Datos personales (nombre, posición, pierna)
-- Asignación a equipos
-- Carga de foto de perfil
-- Vista previa con estadísticas en tiempo real
+## Scripts
 
-### 2. Gestión de Equipos
-- Crear nuevos equipos
-- Asignar días de juego
-- Cargar logo del equipo
-- Tablillas de posiciones por día
+| Archivo | Descripción |
+|---------|-------------|
+| `supabase-config.js` | Cliente Supabase, utilidades (`soloAdmin`, `debounce`, `mostrarToast`) |
+| `auth.js` | Login/registro por email |
+| `auth-google.js` | Login con Google OAuth |
+| `script-v2.js` | Lógica principal (~1334 líneas) |
+| `tournaments.js` | Creación y selector de torneos |
+| `stats.js` | Estadísticas y gráficos |
+| `export.js` | Exportación JSON, CSV, PDF |
+| `misiones.js` | Sistema de misiones/XP/niveles (75 misiones) |
+| `buscador.js` | Buscador de jugadores con filtros |
+| `equipos.js` | Sección equipos e historial de torneos |
+| `admin-users.js` | Gestión de usuarios en panel admin |
 
-### 3. Sistema de Fixtures
-- Generación automática de calendario
-- Configuración de horarios
-- Gestión de duración de partidos
-- Visualización clara de enfrentamientos
+## Entry Points
 
-### 4. Carga de Resultados
-- Ingreso de goles con asignación a jugadores
-- Sistema de tarjetas (amarillas y rojas)
-- Selección de MVP
-- Actualización automática de estadísticas
+- `index-v2.html` — app principal con login email
+- `index-auth-google.html` — login con Google OAuth
+- `index-auth.html` — app alternativa con login email
 
-### 5. Estadísticas
-- Top goleadores
-- Vallas invictas por equipo
-- Ratings dinámicos de jugadores
-- Histórico de desempeño
-
-### 6. Hall de la Fama
-- Ranking de jugadores por MVPs
-- Cartas EA Sports estilo
-- Estadísticas destacadas
-
-## 🛠️ Tecnología Utilizada
-
-- **HTML5**: Estructura
-- **CSS3**: Diseño responsivo con variables CSS
-- **JavaScript Vanilla**: Lógica de negocio
-- **LocalStorage**: Persistencia de datos
-- **Canvas**: Compresión de imágenes
-
-## 📱 Responsive Design
-
-- Adaptado para desktop
-- Interfaz móvil amigable
-- Menú de navegación flexible
-- Tablas escalables
-
-## 💾 Almacenamiento
-
-Todos los datos se guardan localmente en el navegador mediante `localStorage` con la clave `LIGA_2026`.
-
-**Estructura de datos:**
-```json
-{
-  "equipos": [{ nombre, dia, logo, estadísticas }],
-  "jugadores": [{ id, ci, nombre, posición, equipos, estadísticas }],
-  "fixture": [{ dia, fecha, hora, local, visitante }]
-}
-```
-
-## 🎨 Diseño
-
-- Tema oscuro profesional
-- Colores principales: Amarillo (#eab308) y Gris
-- Animaciones suaves
-- Interfaz intuitiva
-
-## 📸 Características de Interfaz
-
-- Cartas de jugador estilo EA Sports
-- Podios interactivos
-- Tablas de posiciones
-- Grillas de estadísticas
-- Fichas de jugadores
-
-## 🔐 Panel Administrativo
-
-Acceso a funciones avanzadas:
-- Crear equipos y jugadores
-- Cargar resultados
-- Generar fixtures
-- Gestionar y eliminar datos
-- Búsqueda avanzada de jugadores
-
-## 📝 Notas de Desarrollo
-
-- Las imágenes se comprimen automáticamente al cargarlas
-- El rating se calcula dinámicamente según desempeño
-- Los datos persisten en sesiones
-- Validación de datos completos antes de guardar
-
-## 📄 Licencia
+## Licencia
 
 Desarrollado para Liga Oriental 2026
-
----
-
-**Desarrollado con ❤️ para los amantes del fútbol**
