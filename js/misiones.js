@@ -222,14 +222,11 @@ const MISIONES = [
     check: (j, ctx) => (ctx?.gcTotal || 0) === 0 && (j.pj || 0) >= 5 },
 ];
 
-console.log('[MISIONES] Total misiones definidas:', MISIONES.length, '| general:', MISIONES.filter(m=>m.tipo==='general').length, '| field:', MISIONES.filter(m=>m.tipo==='field').length, '| por:', MISIONES.filter(m=>m.tipo==='por').length);
-
 function misionesParaPosicion(posicion) {
-  const filtradas = posicion === 'POR'
-    ? MISIONES.filter(m => m.tipo === 'general' || m.tipo === 'por')
-    : MISIONES.filter(m => m.tipo === 'general' || m.tipo === 'field');
-  console.log('[MISIONES] misionesParaPosicion para', posicion, 'devuelve', filtradas.length);
-  return filtradas;
+  if (posicion === 'POR') {
+    return MISIONES.filter(m => m.tipo === 'general' || m.tipo === 'por');
+  }
+  return MISIONES.filter(m => m.tipo === 'general' || m.tipo === 'field');
 }
 
 const DEFAULT_AVATAR_MISSIONS = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect fill='%2330363d' width='150' height='150'/%3E%3Ctext fill='%238b949e' font-family='sans-serif' font-size='14' text-anchor='middle' x='75' y='85'%3ESin Foto%3C/text%3E%3C/svg%3E";
@@ -480,7 +477,6 @@ async function computeMisionesForPlayer(jugador, torneoId) {
   const completadas = misiones.filter(m => m.completada).length;
   const totalMisiones = misiones.length;
 
-  console.log('[MISIONES] computeMisionesForPlayer para', enrichedJ.nombre, '| totalMisiones:', totalMisiones, '| completadas:', completadas);
   return { jugador: enrichedJ, xp, nivel, misiones, completadas, totalMisiones, ctx };
 }
 
@@ -596,7 +592,7 @@ window.cargarMisionesJugador = async function(jugadorId, jugadorObj) {
         </div>
       </div>
 
-      <h4 style="color:#eab308; margin:0 0 8px 0; font-size:0.9rem;">🎯 Misiones (${completadas}/${totalMisiones})</h4>
+      <h4 style="color:#eab308; margin:0 0 8px 0; font-size:0.9rem;">🎯 Misiones (${completadas}/${totalMisiones}) ${totalMisiones > 10 ? '<span style="color:#8b949e; font-weight:normal; font-size:0.7rem;">(desplazá para ver más)</span>' : ''}</h4>
       <div style="display:flex; flex-direction:column; gap:4px;">
         ${misiones.map(m => {
           const done = m.completada;
