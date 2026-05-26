@@ -15,6 +15,9 @@ window.showSec = function(id, btn) {
   if(id === 'fama') renderFama();
   if(id === 'fixture') renderFixtureActual();
   if(id === 'stats') renderEstadisticasAvanzadas(torneoActual, '');
+  if(id === 'buscador') renderBuscador();
+  if(id === 'equipos') renderEquipos();
+  if(id === 'historial') renderHistorial();
 };
 
 async function comprimirImagen(base64, maxWidth = 300) {

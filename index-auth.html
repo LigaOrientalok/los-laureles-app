@@ -28,6 +28,8 @@
     <script src="js/script-v2.js"></script>
     <script src="js/misiones.js"></script>
     <script src="js/admin-users.js"></script>
+    <script src="js/buscador.js"></script>
+    <script src="js/equipos.js"></script>
     <script src="js/auth.js"></script>
     
     <script>
@@ -171,6 +173,9 @@
                         <button class="nav-btn" onclick="showSec('fixture', this)">📅 FIXTURE</button>
                         <button class="nav-btn" onclick="showSec('stats', this)">📊 STATS</button>
                         <button class="nav-btn" onclick="showSec('fama', this)">🏆 FAMA</button>
+                        <button class="nav-btn" onclick="showSec('buscador', this)">🔍 JUGADORES</button>
+                        <button class="nav-btn" onclick="showSec('equipos', this)">📋 EQUIPOS</button>
+                        <button class="nav-btn" onclick="showSec('historial', this)">📜 HISTORIAL</button>
                         <button class="nav-btn" onclick="mostrarMisiones()">🎯 MISIONES</button>
                         <button class="nav-btn admin-btn" onclick="accesoAdmin(this)">⚙️ ADMIN</button>
                     </nav>
@@ -328,6 +333,43 @@
                         <div class="box">
                             <h3>🏆 SALÓN DE LA FAMA</h3>
                             <div id="renderFama" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:20px;"></div>
+                        </div>
+                    </section>
+
+                    <!-- ========= BUSCADOR ========= -->
+                    <section id="sec-buscador" class="section">
+                        <div class="box">
+                            <h3>🔍 Buscador de Jugadores</h3>
+                            <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
+                                <input type="text" id="buscador-search" placeholder="Buscar por nombre..." oninput="renderBuscador()" style="flex:1; min-width:150px;">
+                                <select id="buscador-pos" onchange="renderBuscador()" style="flex:0 0 auto; min-width:120px;">
+                                    <option value="">Todas las posiciones</option>
+                                    <option value="POR">Portero</option>
+                                    <option value="DFC">Defensa</option>
+                                    <option value="MC">Mediocampista</option>
+                                    <option value="DEL">Delantero</option>
+                                </select>
+                                <select id="buscador-eq" onchange="renderBuscador()" style="flex:0 0 auto; min-width:120px;">
+                                    <option value="">Todos los equipos</option>
+                                </select>
+                            </div>
+                            <div id="buscador-content" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:12px;"></div>
+                        </div>
+                    </section>
+
+                    <!-- ========= EQUIPOS ========= -->
+                    <section id="sec-equipos" class="section">
+                        <div class="box">
+                            <h3>📋 Equipos</h3>
+                            <div id="equipos-content" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:12px;"></div>
+                        </div>
+                    </section>
+
+                    <!-- ========= HISTORIAL ========= -->
+                    <section id="sec-historial" class="section">
+                        <div class="box">
+                            <h3>📜 Historial de Torneos</h3>
+                            <div id="historial-content" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:16px;"></div>
                         </div>
                     </section>
 
