@@ -19,7 +19,8 @@ main { max-width: 1100px; margin: 20px auto; width: 95%; }
 input, select { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid var(--border); background: #0d1117; color: white; margin-bottom: 8px; }
 .label-accent { color: var(--accent); font-size: 0.7rem; font-weight: bold; text-transform: uppercase; display: block; margin-bottom: 4px; }
 .btn-main { width: 100%; padding: 16px; background: var(--accent); color: black; font-weight: 900; border: none; border-radius: 6px; cursor: pointer; text-transform: uppercase; }
-.btn-mini { background: #30363d; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
+.btn-mini { background: #30363d; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+.btn-mini.small { min-height: auto; padding: 6px 10px; }
 
 /* CARTA EA */
 .ficha-ea { width: 280px; background: linear-gradient(135deg, #1e1e1e 0%, #000 100%); border: 2px solid var(--accent); position: relative; clip-path: polygon(0% 0%, 100% 0%, 100% 88%, 50% 100%, 0% 88%); padding-bottom: 30px; box-shadow: 0 15px 50px rgba(0,0,0,0.8); margin: 20px auto; }

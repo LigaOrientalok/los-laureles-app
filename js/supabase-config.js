@@ -6,17 +6,33 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Notificaciones para el usuario
-function mostrarErrorUsuario(mensaje) {
+function mostrarToast(mensaje, tipo) {
   const existing = document.getElementById('toast-notif');
   if (existing) existing.remove();
   const toast = document.createElement('div');
   toast.id = 'toast-notif';
-  const isSuccess = mensaje.includes('✅') || mensaje.includes('🗑️') || mensaje.toLowerCase().includes('correcto') || mensaje.toLowerCase().includes('guardado');
-  toast.style.cssText = `position:fixed;top:20px;right:20px;z-index:9999;${isSuccess ? 'background:#22c55e;' : 'background:#ef4444;'}color:white;padding:16px 24px;border-radius:8px;font-family:sans-serif;font-size:0.9rem;box-shadow:0 8px 30px rgba(0,0,0,0.5);max-width:400px;animation:slideIn 0.3s ease;`;
+  const bgColor = tipo === 'success' ? '#22c55e' : tipo === 'warning' ? '#f97316' : '#ef4444';
+  toast.style.cssText = `position:fixed;top:20px;right:20px;z-index:9999;background:${bgColor};color:white;padding:16px 24px;border-radius:8px;font-family:sans-serif;font-size:0.9rem;box-shadow:0 8px 30px rgba(0,0,0,0.5);max-width:400px;animation:slideIn 0.3s ease;`;
   toast.textContent = mensaje;
   document.body.appendChild(toast);
   setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.5s'; setTimeout(() => toast.remove(), 500); }, 5000);
 }
+function mostrarErrorUsuario(mensaje) {
+  const isSuccess = mensaje.includes('✅') || mensaje.includes('🗑️') || mensaje.toLowerCase().includes('correcto') || mensaje.toLowerCase().includes('guardado');
+  mostrarToast(mensaje, isSuccess ? 'success' : 'error');
+}
+
+// Debounce helper
+function debounce(fn, ms) {
+  let timer;
+  return function(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), ms);
+  };
+}
+const debouncedUpdatePreview = debounce(() => {
+  if (typeof updatePreview === 'function') updatePreview();
+}, 300);
 
 // Loading state helper
 async function conLoading(btnSelector, textoAlternativo, fn) {
@@ -72,6 +88,31 @@ const db = {
     return data?.[0];
   },
 
+  async updateTorneo(id, updates) {
+    const { data, error } = await _supabase.from('torneos').update(updates).eq('id', id).select();
+    this._handleError('Error updating torneo:', error);
+    return data?.[0];
+  },
+
+  async deleteTorneo(id) {
+    const { data: eqs } = await _supabase.from('equipos').select('id').eq('torneo_id', id);
+    const eqIds = eqs?.map(e => e.id) || [0];
+    await this._deleteAllResultsByEquipos(eqIds);
+    await _supabase.from('jugador_equipo').delete().in('equipo_id', eqIds);
+    await _supabase.from('equipos').delete().eq('torneo_id', id);
+    const { error } = await _supabase.from('torneos').delete().eq('id', id);
+    this._handleError('Error deleting torneo:', error);
+  },
+
+  async _deleteAllResultsByEquipos(equipoIds) {
+    const { data: res } = await _supabase.from('resultados').select('id').in('equipo_local_id', equipoIds);
+    const resIds = res?.map(r => r.id) || [0];
+    await _supabase.from('goles').delete().in('resultado_id', resIds);
+    await _supabase.from('tarjetas').delete().in('resultado_id', resIds);
+    await _supabase.from('resultados').delete().in('id', resIds);
+    await _supabase.from('fixture').delete().in('equipo_local_id', equipoIds);
+  },
+
   async getEquipos(torneoId) {
     const { data, error } = await _supabase.from('equipos').select('*').eq('torneo_id', torneoId);
     this._handleError('Error fetching equipos:', error);
@@ -91,6 +132,8 @@ const db = {
   },
 
   async deleteEquipo(id) {
+    await this._deleteAllResultsByEquipos([id]);
+    await _supabase.from('jugador_equipo').delete().eq('equipo_id', id);
     const { error } = await _supabase.from('equipos').delete().eq('id', id);
     this._handleError('Error deleting equipo:', error);
   },
@@ -125,6 +168,7 @@ const db = {
   },
 
   async deleteJugador(id) {
+    await _supabase.from('jugador_equipo').delete().eq('jugador_id', id);
     const { error } = await _supabase.from('jugadores').delete().eq('id', id);
     this._handleError('Error deleting jugador:', error);
   },

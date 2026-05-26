@@ -33,6 +33,13 @@ async function comprimirImagen(base64, maxWidth = 300) {
 
 window.previewImage = async function(input) {
   if (input.files && input.files[0]) {
+    const file = input.files[0];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      mostrarErrorUsuario('La foto supera los 5MB. Comprimila antes de subir.');
+      input.value = '';
+      return;
+    }
     const reader = new FileReader();
     reader.onload = async (e) => {
       tempImgJugador = await comprimirImagen(e.target.result);
@@ -162,10 +169,19 @@ window.generarFixtureAuto = async function(btn) {
     const horaInicio = document.getElementById('fixHoraInicio').value;
     const duracion = parseInt(document.getElementById('fixDuracion').value);
     
-    const equipos = await db.getEquipos(torneoActual);
+    const [equipos, existingFixture] = await Promise.all([
+      db.getEquipos(torneoActual),
+      db.getFixture(torneoActual)
+    ]);
     let equiposDia = equipos.filter(e => e.dia_semana === dia).map(e => e.nombre);
     
     if (equiposDia.length < 2) return mostrarErrorUsuario("Necesitas más equipos");
+    
+    // Prevent duplicates
+    if (existingFixture.some(f => f.dia_semana === dia)) {
+      if (!confirm('Ya existe un fixture para este día. ¿Agregar más partidos?')) return;
+    }
+    
     if (equiposDia.length % 2 !== 0) equiposDia.push("DESCANSA");
     
     const numE = equiposDia.length;
@@ -188,8 +204,7 @@ window.generarFixtureAuto = async function(btn) {
         }
       }
       equiposDia.splice(1, 0, equiposDia.pop());
-    }
-    
+    }  
     mostrarErrorUsuario("✅ Fixture Generado");
     await renderFixtureActual();
   } finally {
@@ -287,7 +302,7 @@ window.cargarResultadoGlobal = async function() {
   
   // Create the resultado record
   const resultado = await db.createResultado(torneoActual, fiId || null, e1Id, e2Id, g1, g2, mvpId || null);
-  if (!resultado) return mostrarErrorUsuario('Error al guardar el resultado');
+  if (!resultado) { mostrarErrorUsuario('Error al guardar el resultado'); return false; }
   const resId = resultado.id;
   
   // Update team stats (sequentially to avoid race conditions)
@@ -309,49 +324,74 @@ window.cargarResultadoGlobal = async function() {
   await db.updateEquipo(e1.id, newE1);
   await db.updateEquipo(e2.id, newE2);
   
+  // Build per-player delta map to avoid race conditions
+  const deltas = {};
+  function addDelta(pid, field, val) {
+    if (!deltas[pid]) deltas[pid] = { pj: false, goles: 0, amarillas: 0, rojas: 0, mvps: 0 };
+    if (field === 'pj') deltas[pid].pj = true;
+    else deltas[pid][field] = (deltas[pid][field] || 0) + val;
+  }
+  
   // Register goals
-  const golSelectors = document.querySelectorAll('.sel-gol-E1, .sel-gol-E2');
-  const goalPromises = [];
-  golSelectors.forEach((s) => {
+  document.querySelectorAll('.sel-gol-E1, .sel-gol-E2').forEach((s) => {
     const jugadorId = parseInt(s.value);
-    const jugador = jugadores.find(x => x.id === jugadorId);
-    if (!jugador) return;
-    const equipoId = s.classList.contains('sel-gol-E1') ? e1Id : e2Id;
-    goalPromises.push(
-      db.createGol(resId, jugadorId, equipoId, null)
-        .then(() => db.updateJugador(jugadorId, { goles: (jugador.goles || 0) + 1, pj: (jugador.pj || 0) + 1 }))
-    );
+    if (!jugadorId || isNaN(jugadorId)) return;
+    addDelta(jugadorId, 'goles', 1);
   });
-  await Promise.all(goalPromises);
   
   // Register cards
-  const cardPromises = [];
   ['E1', 'E2'].forEach((lado) => {
     const jS = document.querySelectorAll(`.sel-card-j-${lado}`);
     const tS = document.querySelectorAll(`.sel-card-t-${lado}`);
-    const equipoId = lado === 'E1' ? e1Id : e2Id;
     jS.forEach((s, i) => {
       const jugadorId = parseInt(s.value);
-      const jugador = jugadores.find(x => x.id === jugadorId);
-      if (!jugador) return;
+      if (!jugadorId || isNaN(jugadorId)) return;
       const tipo = tS[i]?.value || 'A';
-      cardPromises.push(
-        db.createTarjeta(resId, jugadorId, equipoId, tipo, null)
-          .then(() => db.updateJugador(jugadorId, { [tipo === 'A' ? 'amarillas' : 'rojas']: (jugador[tipo === 'A' ? 'amarillas' : 'rojas'] || 0) + 1 }))
-      );
+      addDelta(jugadorId, tipo === 'A' ? 'amarillas' : 'rojas', 1);
     });
   });
-  await Promise.all(cardPromises);
   
   // MVP
-  if (mvpId) {
-    const jugador = jugadores.find(x => x.id === mvpId);
-    if (jugador) {
-      await db.updateJugador(mvpId, { mvps: (jugador.mvps || 0) + 1 });
-    }
+  if (mvpId && !isNaN(mvpId)) addDelta(mvpId, 'mvps', 1);
+  
+  // Apply all player updates sequentially (one per player) to avoid race conditions
+  for (const [pid, d] of Object.entries(deltas)) {
+    const base = jugadores.find(j => j.id === parseInt(pid));
+    if (!base) continue;
+    const upd = {};
+    if (d.pj) upd.pj = (base.pj || 0) + 1;
+    if (d.goles) upd.goles = (base.goles || 0) + d.goles;
+    if (d.amarillas) upd.amarillas = (base.amarillas || 0) + d.amarillas;
+    if (d.rojas) upd.rojas = (base.rojas || 0) + d.rojas;
+    if (d.mvps) upd.mvps = (base.mvps || 0) + d.mvps;
+    await db.updateJugador(parseInt(pid), upd);
   }
   
-  mostrarErrorUsuario("✅ ¡Resultado guardado!");
+  // Create goles records (race-safe, independent inserts)
+  await Promise.all(
+    Array.from(document.querySelectorAll('.sel-gol-E1, .sel-gol-E2')).map(s => {
+      const jugadorId = parseInt(s.value);
+      if (!jugadorId || isNaN(jugadorId)) return Promise.resolve();
+      const equipoId = s.classList.contains('sel-gol-E1') ? e1Id : e2Id;
+      return db.createGol(resId, jugadorId, equipoId, null);
+    })
+  );
+  
+  // Create tarjetas records
+  await Promise.all(
+    ['E1', 'E2'].flatMap((lado) => {
+      const jS = Array.from(document.querySelectorAll(`.sel-card-j-${lado}`));
+      const tS = document.querySelectorAll(`.sel-card-t-${lado}`);
+      const equipoId = lado === 'E1' ? e1Id : e2Id;
+      return jS.map((s, i) => {
+        const jugadorId = parseInt(s.value);
+        if (!jugadorId || isNaN(jugadorId)) return Promise.resolve();
+        return db.createTarjeta(resId, jugadorId, equipoId, tS[i]?.value || 'A', null);
+      });
+    })
+  );
+  
+  mostrarToast("¡Resultado guardado!", 'success');
   await recargarDatos();
   verificarNotificaciones();
 };
@@ -677,34 +717,33 @@ window.eliminarResultado = async function(partidoFixtureId) {
   await db.updateEquipo(e1.id, revertE1);
   await db.updateEquipo(e2.id, revertE2);
 
-  // Revert player stats from goles
+  // Revert player stats — build per-player delta
   const [goles, tarjetas] = await Promise.all([
     db.getGoles(res.id),
     db.getTarjetas(res.id)
   ]);
 
-  for (const gol of goles) {
-    const j = jugadores.find(x => x.id === gol.jugador_id);
-    if (j) {
-      await db.updateJugador(j.id, { ...j, goles: Math.max(0, j.goles - 1), pj: Math.max(0, j.pj - 1) });
-    }
+  const deltas = {};
+  function addDelta(pid, field, val) {
+    if (!deltas[pid]) deltas[pid] = { pj: false, goles: 0, amarillas: 0, rojas: 0, mvps: 0 };
+    if (field === 'pj') deltas[pid].pj = true;
+    else deltas[pid][field] = (deltas[pid][field] || 0) + val;
   }
 
-  for (const tarj of tarjetas) {
-    const j = jugadores.find(x => x.id === tarj.jugador_id);
-    if (j) {
-      const upd = { ...j };
-      upd[tarj.tipo === 'A' ? 'amarillas' : 'rojas'] = Math.max(0, (j[tarj.tipo === 'A' ? 'amarillas' : 'rojas'] || 0) - 1);
-      await db.updateJugador(j.id, upd);
-    }
-  }
+  for (const gol of goles) addDelta(gol.jugador_id, 'goles', -1);
+  for (const tarj of tarjetas) addDelta(tarj.jugador_id, tarj.tipo === 'A' ? 'amarillas' : 'rojas', -1);
+  if (res.mvp_id) addDelta(res.mvp_id, 'mvps', -1);
 
-  // Revert MVP
-  if (res.mvp_id) {
-    const mvp = jugadores.find(x => x.id === res.mvp_id);
-    if (mvp) {
-      await db.updateJugador(mvp.id, { ...mvp, mvps: Math.max(0, mvp.mvps - 1) });
-    }
+  for (const [pid, d] of Object.entries(deltas)) {
+    const base = jugadores.find(j => j.id === parseInt(pid));
+    if (!base) continue;
+    const upd = {};
+    if (d.pj) upd.pj = Math.max(0, (base.pj || 0) - 1);
+    if (d.goles) upd.goles = Math.max(0, (base.goles || 0) + d.goles);
+    if (d.amarillas) upd.amarillas = Math.max(0, (base.amarillas || 0) + d.amarillas);
+    if (d.rojas) upd.rojas = Math.max(0, (base.rojas || 0) + d.rojas);
+    if (d.mvps) upd.mvps = Math.max(0, (base.mvps || 0) + d.mvps);
+    await db.updateJugador(parseInt(pid), upd);
   }
 
   // Delete goles, tarjetas, resultado
@@ -714,7 +753,7 @@ window.eliminarResultado = async function(partidoFixtureId) {
   ]);
   await db.deleteResultado(res.id);
 
-  mostrarErrorUsuario('🗑️ Resultado eliminado y estadísticas revertidas');
+  mostrarToast('Resultado eliminado y estadísticas revertidas', 'success');
   await recargarDatos();
   renderFixtureActual();
 };
@@ -741,16 +780,24 @@ window.cargarResultadoGlobal = async function() {
   const isEdit = editFlag?.value === '1';
   const fiId = parseInt(document.getElementById('resFiId')?.value);
 
-  if (isEdit && fiId) {
-    if (!confirm('¿Guardar cambios? Se reemplazará el resultado anterior.')) return;
-    await eliminarResultado(fiId);
-    if (editFlag) editFlag.value = '0';
-  }
-
-  const btn = document.querySelector('[onclick*="cargarResultadoGlobal"]');
+  const btn = document.querySelector('#sec-fixture .btn-main') || document.querySelector('[onclick*="cargarResultadoGlobal"]');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Guardando...'; }
+
   try {
-    return await _cargarResultadoGlobalOriginal();
+    if (isEdit && fiId) {
+      if (!confirm('¿Guardar cambios? Se reemplazará el resultado anterior.')) return;
+      if (editFlag) editFlag.value = '0';
+    }
+    const result = await _cargarResultadoGlobalOriginal();
+    // Only delete old result after new one is safely saved
+    if (isEdit && fiId && result !== false) {
+      await eliminarResultado(fiId);
+    }
+    return result;
+  } catch (e) {
+    mostrarToast('Error al guardar. Los datos originales se conservan.', 'error');
+    console.error(e);
+    if (editFlag) editFlag.value = '1';
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = '✅ GUARDAR RESULTADO'; }
   }
@@ -1105,7 +1152,7 @@ window.mostrarDetalleJugador = async function(jugadorId) {
         const nivelLabel = getNivelLabel(nivel);
         const misiones = misionesCompletadas(j, j.posicion, missionCtx);
         const completadas = misiones.filter(m => m.completada).length;
-        const totalXpMisiones = xpDeMisiones(j);
+        const totalXpMisiones = xpDeMisiones(j, j.posicion, missionCtx);
         return `
         <div style="background:#0d1117; border-radius:8px; padding:15px; margin-bottom:10px; text-align:center;">
           <div style="display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:8px;">

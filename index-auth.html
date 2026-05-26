@@ -158,6 +158,7 @@
                         <select id="select-torneo" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; flex:1; min-width:200px;"></select>
                         <button onclick="crearNuevoTorneo()" class="admin-only super-admin-only btn-mini" style="background:#3b82f6; color:white;">+ Nuevo Torneo</button>
                         <button onclick="respaldarDatos()" class="admin-only super-admin-only btn-mini" style="background:#22c55e; color:white;">💾 Respaldo</button>
+                        <button onclick="recomputarEstadisticas(torneoActual)" class="admin-only super-admin-only btn-mini" style="background:#ef4444; color:white;">🔄 Recomputar</button>
                         <button onclick="exportarJSON(torneoActual)" class="admin-only btn-mini" style="background:#3b82f6; color:white;">📄 JSON</button>
                         <button onclick="exportarCSV(torneoActual)" class="admin-only btn-mini" style="background:#a855f7; color:white;">📊 CSV</button>
                         <button onclick="exportarPDF(torneoActual)" class="admin-only btn-mini" style="background:#f97316; color:white;">📑 PDF</button>

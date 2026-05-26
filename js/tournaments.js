@@ -25,16 +25,42 @@ function renderizarSelectorTorneos(torneos) {
 }
 
 async function crearNuevoTorneo() {
-  const nombre = prompt('Nombre del nuevo torneo:');
-  if (!nombre) return;
+  const overlay = document.createElement('div');
+  overlay.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;justify-content:center;align-items:center;z-index:1000;';
+  overlay.id = 'torneo-overlay';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
 
-  const descripcion = prompt('Descripción (opcional):');
+  overlay.innerHTML = `
+    <div style="background:#161b22; border:2px solid #eab308; border-radius:16px; padding:30px; max-width:400px; width:90%; position:relative;">
+      <button onclick="this.closest('#torneo-overlay').remove()" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
+      <h2 style="color:#eab308; text-align:center; margin:0 0 20px 0;">➕ Nuevo Torneo</h2>
+      <label class="label-accent">Nombre:</label>
+      <input type="text" id="new-torneo-name" placeholder="Ej: Torneo Apertura 2026" style="margin-bottom:15px;">
+      <label class="label-accent">Descripción (opcional):</label>
+      <input type="text" id="new-torneo-desc" placeholder="Ej: Torneo de verano" style="margin-bottom:20px;">
+      <button onclick="guardarNuevoTorneo()" style="width:100%; padding:14px; background:#eab308; color:black; font-weight:bold; border:none; border-radius:6px; cursor:pointer; font-size:1rem;">Crear Torneo</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('new-torneo-name')?.focus(), 100);
+}
+
+async function guardarNuevoTorneo() {
+  const nombre = document.getElementById('new-torneo-name')?.value?.trim();
+  if (!nombre) return mostrarErrorUsuario('El nombre es obligatorio');
+  const descripcion = document.getElementById('new-torneo-desc')?.value?.trim();
+
+  const btn = document.querySelector('#torneo-overlay button:last-child');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Creando...'; }
+
   const torneo = await db.createTorneo(nombre, descripcion);
-  
   if (torneo) {
     torneoActual = torneo.id;
     await inicializarTorneos();
-    mostrarErrorUsuario(`✅ Torneo "${nombre}" creado`);
+    mostrarToast(`Torneo "${nombre}" creado`, 'success');
+    document.getElementById('torneo-overlay')?.remove();
+  } else {
+    if (btn) { btn.disabled = false; btn.textContent = 'Crear Torneo'; }
   }
 }
 

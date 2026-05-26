@@ -79,10 +79,11 @@ function mostrarApp() {
       <div style="display:flex; gap:10px; justify-content:center; margin:10px 0; flex-wrap:wrap;">
         <select id="select-torneo" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; flex:1; min-width:200px;"></select>
         <button onclick="crearNuevoTorneo()" class="admin-only super-admin-only btn-mini" style="background:#3b82f6; color:white;">+ Nuevo Torneo</button>
-        <button onclick="respaldarDatos()" class="admin-only super-admin-only btn-mini" style="background:#22c55e; color:white;">💾 Respaldo</button>
-        <button onclick="exportarJSON(torneoActual)" class="admin-only btn-mini" style="background:#3b82f6; color:white;">📄 JSON</button>
-        <button onclick="exportarCSV(torneoActual)" class="admin-only btn-mini" style="background:#a855f7; color:white;">📊 CSV</button>
-        <button onclick="exportarPDF(torneoActual)" class="admin-only btn-mini" style="background:#f97316; color:white;">📑 PDF</button>
+            <button onclick="respaldarDatos()" class="admin-only super-admin-only btn-mini" style="background:#22c55e; color:white;">💾 Respaldo</button>
+            <button onclick="recomputarEstadisticas(torneoActual)" class="admin-only super-admin-only btn-mini" style="background:#ef4444; color:white;">🔄 Recomputar</button>
+            <button onclick="exportarJSON(torneoActual)" class="admin-only btn-mini" style="background:#3b82f6; color:white;">📄 JSON</button>
+            <button onclick="exportarCSV(torneoActual)" class="admin-only btn-mini" style="background:#a855f7; color:white;">📊 CSV</button>
+            <button onclick="exportarPDF(torneoActual)" class="admin-only btn-mini" style="background:#f97316; color:white;">📑 PDF</button>
       </div>
 
       <nav class="nav-main" id="nav-main">
@@ -103,9 +104,9 @@ function mostrarApp() {
           <div class="box" style="flex:1; min-width:300px;">
             <h2>Registro de Jugador</h2>
             <label class="label-accent">CI del Jugador:</label>
-            <input type="number" id="regCI" placeholder="Cédula de Identidad" oninput="updatePreview()">
+            <input type="number" id="regCI" placeholder="Cédula de Identidad" oninput="debouncedUpdatePreview()">
             <label class="label-accent">Nombre:</label>
-            <input type="text" id="regNom" placeholder="Nombre completo" oninput="updatePreview()">
+            <input type="text" id="regNom" placeholder="Nombre completo" oninput="debouncedUpdatePreview()">
             <div style="display: flex; gap: 10px;">
               <div style="flex:1">
                 <label class="label-accent">Posición:</label>
