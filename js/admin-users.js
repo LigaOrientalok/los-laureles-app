@@ -11,10 +11,7 @@ async function mostrarPanelAdmin() {
 
 // Panel de gestión de usuarios
 async function mostrarDashboardUsuarios() {
-  if (!usuarioData || usuarioData.rol !== 'admin') {
-    mostrarErrorUsuario('No tienes permisos para acceder aqui');
-    return;
-  }
+  try { await soloAdmin(); } catch (e) { return mostrarErrorUsuario(e.message); }
 
   const { data: usuarios, error } = await _supabase
     .from('usuarios')
@@ -76,7 +73,7 @@ async function mostrarDashboardUsuarios() {
                   </select>
                 </td>
                 <td style="padding:12px; text-align:center;">
-                  <button onclick="eliminarUsuario('${u.id}', '${u.email}')" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:0.85rem;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">Eliminar</button>
+                  <button data-uid="${u.id}" data-uemail="${escapeHtml(u.email)}" onclick="eliminarUsuario(this.dataset.uid, this.dataset.uemail)" style="background:#ef4444; color:white; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:0.85rem;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">Eliminar</button>
                 </td>
               </tr>
             `).join('')}
@@ -91,6 +88,7 @@ async function mostrarDashboardUsuarios() {
 
 // Cambiar rol de usuario
 async function cambiarRol(usuarioId, nuevoRol) {
+  try { await soloAdmin(); } catch (e) { return mostrarErrorUsuario(e.message); }
   const { error } = await _supabase
     .from('usuarios')
     .update({ rol: nuevoRol })
@@ -106,6 +104,7 @@ async function cambiarRol(usuarioId, nuevoRol) {
 
 // Cambiar estado de usuario
 async function cambiarEstado(usuarioId, nuevoEstado) {
+  try { await soloAdmin(); } catch (e) { return mostrarErrorUsuario(e.message); }
   const actualizacion = {
     estado: nuevoEstado,
     fecha_aprobacion: nuevoEstado === 'aprobado' ? new Date().toISOString() : null,
@@ -127,6 +126,7 @@ async function cambiarEstado(usuarioId, nuevoEstado) {
 
 // Eliminar usuario (también de auth.users vía RPC)
 async function eliminarUsuario(usuarioId, email) {
+  try { await soloAdmin(); } catch (e) { return mostrarErrorUsuario(e.message); }
   if (!confirm(`¿Eliminar usuario ${email}?`)) return;
 
   const { error } = await _supabase.rpc('eliminar_usuario_auth', { user_id: usuarioId });

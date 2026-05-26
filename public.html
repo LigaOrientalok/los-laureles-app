@@ -142,7 +142,7 @@
             
             const getEqName = (id) => {
                 const eq = equipos.find(e => e.id === id);
-                return eq ? eq.nombre : `Equipo ${id}`;
+                return eq ? escapeHtml(eq.nombre) : `Equipo ${id}`;
             };
 
             const grupos = fixture.reduce((acc, m) => {

@@ -219,7 +219,7 @@ window.filtrarEquiposPorDia = async function() {
   const equipos = await db.getEquipos(torneoActual);
   const equiposDia = equipos.filter(e => e.dia_semana === dia);
   
-  const opt = equiposDia.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('');
+  const opt = equiposDia.map(e => `<option value="${e.id}">${escapeHtml(e.nombre)}</option>`).join('');
   document.getElementById('resE1').innerHTML = '<option disabled selected>Local</option>' + opt;
   document.getElementById('resE2').innerHTML = '<option disabled selected>Visitante</option>' + opt;
 };

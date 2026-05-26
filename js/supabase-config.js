@@ -50,6 +50,22 @@ async function conLoading(btnSelector, textoAlternativo, fn) {
   }
 }
 
+// Server-side permission guards (defense-in-depth, RLS is the real protection)
+async function soloAdmin() {
+  const user = (await _supabase.auth.getUser()).data?.user;
+  if (!user) throw new Error('No autenticado');
+  const { data } = await _supabase.from('usuarios').select('rol').eq('id', user.id).maybeSingle();
+  if (data?.rol !== 'admin') throw new Error('Acceso denegado: se requiere admin');
+}
+
+// Sanitize image src — only allow data URIs and http/https URLs
+function sanitizarImgSrc(src) {
+  if (!src) return '';
+  if (src.startsWith('data:image/')) return src;
+  if (src.startsWith('http://') || src.startsWith('https://')) return src;
+  return '';
+}
+
 // Funciones de utilidad
 function escapeHtml(str) {
   if (!str) return '';
@@ -116,6 +132,7 @@ const db = {
   async getEquipos(torneoId) {
     const { data, error } = await _supabase.from('equipos').select('*').eq('torneo_id', torneoId);
     this._handleError('Error fetching equipos:', error);
+    if (data) data.forEach(e => { e.logo = sanitizarImgSrc(e.logo); });
     return data || [];
   },
 
@@ -152,6 +169,7 @@ const db = {
         });
       }
     }
+    if (jugadores) jugadores.forEach(j => { j.foto = sanitizarImgSrc(j.foto); });
     return jugadores;
   },
 

@@ -49,12 +49,12 @@ async function exportarCSV(torneoId) {
       csv += `${i + 1},${csvEscape(e.nombre)},${e.pj},${e.v},${e.e},${e.p},${e.gf},${e.gc},${e.gf - e.gc},${e.pts}\n`;
     });
 
-    csv += '\n\nJUGADORES\n\n';
-    csv += 'CI,Nombre,Posición,Goles,PJ,MVP,Amarillas,Rojas\n';
+  csv += '\n\nJUGADORES\n\n';
+  csv += 'Nombre,Posición,Goles,PJ,MVP,Amarillas,Rojas\n';
 
-    jugadores.forEach(j => {
-      csv += `${csvEscape(j.ci)},${csvEscape(j.nombre)},${j.posicion},${j.goles},${j.pj},${j.mvps || 0},${j.amarillas || 0},${j.rojas || 0}\n`;
-    });
+  jugadores.forEach(j => {
+    csv += `${csvEscape(j.nombre)},${j.posicion},${j.goles},${j.pj},${j.mvps || 0},${j.amarillas || 0},${j.rojas || 0}\n`;
+  });
 
     descargarArchivo(csv, `liga-oriental-${new Date().toISOString().split('T')[0]}.csv`, 'text/csv;charset=utf-8;');
   } finally {
@@ -191,6 +191,7 @@ function descargarArchivo(contenido, nombre, tipo) {
 }
 
 async function respaldarDatos() {
+  try { await soloAdmin(); } catch (e) { return mostrarErrorUsuario(e.message); }
   const btn = document.querySelector('[onclick*="respaldarDatos"]');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Respaldando...'; }
   try {
@@ -217,6 +218,7 @@ async function respaldarDatos() {
 
 // Recompute all stats from raw data
 async function recomputarEstadisticas(torneoId) {
+  try { await soloAdmin(); } catch (e) { return mostrarErrorUsuario(e.message); }
   if (!confirm('¿Recomputar todas las estadísticas desde cero? Esto sobreescribirá los datos actuales.')) return;
   mostrarToast('Recomputando estadísticas...', 'success');
 
