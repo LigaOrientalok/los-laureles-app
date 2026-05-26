@@ -73,6 +73,86 @@ window.renderBuscador = async function() {
   }).join('');
 };
 
+// Floating search bar (siempre visible en el header)
+let _floatSearchTimer = null;
+
+window.initFloatingSearch = function() {
+  const input = document.getElementById('floating-search-input');
+  const dropdown = document.getElementById('floating-search-dropdown');
+  if (!input || !dropdown) return;
+
+  input.addEventListener('input', function() {
+    clearTimeout(_floatSearchTimer);
+    _floatSearchTimer = setTimeout(() => buscarFlotante(this.value), 200);
+  });
+
+  input.addEventListener('focus', function() {
+    if (this.value.trim()) buscarFlotante(this.value);
+  });
+
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') cerrarDropdownFlotante();
+    if (e.key === 'Enter' && this.value.trim()) {
+      const first = dropdown.querySelector('.float-result');
+      if (first) first.click();
+    }
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#floating-search')) cerrarDropdownFlotante();
+  });
+};
+
+async function buscarFlotante(text) {
+  const dropdown = document.getElementById('floating-search-dropdown');
+  if (!dropdown) return;
+  const term = text.trim().toLowerCase();
+  if (!term || !torneoActual) { dropdown.style.display = 'none'; return; }
+
+  try {
+    const jugadores = await db.getJugadores(torneoActual);
+    const equipos = await db.getEquipos(torneoActual);
+    const matches = jugadores.filter(j => j.nombre.toLowerCase().includes(term)).slice(0, 8);
+
+    if (matches.length === 0) {
+      dropdown.innerHTML = '<div style="padding:12px;color:#8b949e;text-align:center;font-size:0.85rem;">Sin resultados</div>';
+      dropdown.style.display = 'block';
+      return;
+    }
+
+    const posColors = { POR: '#f97316', DFC: '#3b82f6', MC: '#22c55e', DEL: '#ef4444' };
+    const posMap = { POR: 'POR', DFC: 'DFC', MC: 'MC', DEL: 'DEL' };
+
+    dropdown.innerHTML = matches.map(j => {
+      const eqs = (j.equipos || []).map(eId => equipos.find(e => e.id === eId)).filter(Boolean);
+      return `
+        <div class="float-result" onclick="mostrarDetalleJugador(${j.id}); cerrarDropdownFlotante();">
+          <img src="${j.foto || DEFAULT_AVATAR}" class="float-result-foto" onerror="this.src='${DEFAULT_AVATAR}'">
+          <div style="flex:1;min-width:0;">
+            <div class="float-result-nombre">${escapeHtml(j.nombre)}</div>
+            <div style="display:flex;gap:4px;align-items:center;margin-top:2px;">
+              <span style="background:${posColors[j.posicion] || '#30363d'};padding:1px 8px;border-radius:3px;font-size:0.6rem;font-weight:bold;color:white;">${posMap[j.posicion] || j.posicion}</span>
+              ${eqs.map(eq => eq.logo ? `<img src="${eq.logo}" style="width:14px;height:14px;border-radius:50%;object-fit:cover;">` : '').join('')}
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;font-size:0.75rem;color:#8b949e;">
+            <div>⚽ ${j.goles || 0}</div>
+            <div>⭐ ${j.mvps || 0}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    dropdown.style.display = 'block';
+  } catch (e) {
+    dropdown.style.display = 'none';
+  }
+}
+
+window.cerrarDropdownFlotante = function() {
+  const dropdown = document.getElementById('floating-search-dropdown');
+  if (dropdown) dropdown.style.display = 'none';
+};
+
 function populateTeamFilter(equipos) {
   const sel = document.getElementById('buscador-eq');
   if (!sel || sel.dataset.populated) return;

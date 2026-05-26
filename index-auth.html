@@ -166,6 +166,11 @@
                         <button onclick="exportarPDF(torneoActual)" class="admin-only btn-mini" style="background:#f97316; color:white;">📑 PDF</button>
                     </div>
 
+                    <div id="floating-search" style="position:relative; max-width:400px; margin:8px auto 0;">
+                        <input type="text" id="floating-search-input" placeholder="🔍 Buscar jugador..." style="width:100%; padding:10px 14px; border-radius:8px; background:#0d1117; color:white; border:1px solid #30363d; font-size:0.9rem; box-sizing:border-box;">
+                        <div id="floating-search-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:#161b22; border:1px solid #30363d; border-radius:8px; max-height:300px; overflow-y:auto; z-index:200; margin-top:4px; box-shadow:0 8px 30px rgba(0,0,0,0.5);"></div>
+                    </div>
+
                     <nav class="nav-main" id="nav-main">
                         <button class="nav-close" id="nav-close-btn">✕</button>
                         <button class="nav-btn active" onclick="showSec('inicio', this)">REGISTRO</button>
@@ -402,6 +407,7 @@
                 await inicializarTorneos();
                 await updateSelects();
                 verificarNotificaciones();
+                setTimeout(() => initFloatingSearch(), 200);
             }, 100);
 
             const hamBtn = document.getElementById('hamburger-btn');
