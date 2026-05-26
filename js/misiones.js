@@ -454,8 +454,9 @@ function xpDeMisiones(j, posicion, ctx) {
     .reduce((sum, m) => sum + m.xp, 0);
 }
 
-async function computeMisionesForPlayer(jugadorId, torneoId, jugadoresPre) {
-  const jugadores = jugadoresPre || await db.getJugadores(torneoId);
+async function computeMisionesForPlayer(jugador, torneoId) {
+  if (!jugador) return null;
+
   const equipos = await db.getEquipos(torneoId);
   const resultados = await db.getResultados(torneoId);
   const fixture = await db.getFixture(torneoId);
@@ -465,17 +466,14 @@ async function computeMisionesForPlayer(jugadorId, torneoId, jugadoresPre) {
     _supabase.from('tarjetas').select('*').in('resultado_id', resIds),
   ]);
 
-  const j = jugadores.find(x => String(x.id) === String(jugadorId));
-  if (!j) return null;
-
-  const preloaded = { equipos, jugadores, resultados, fixture, allGoles: allGolesResp?.data || [], allTarjetas: allTarjetasResp?.data || [] };
-  const extra = await computeExtraStats(j, torneoId, preloaded);
-  const enrichedJ = { ...j, ...extra };
+  const preloaded = { equipos, jugadores: [jugador], resultados, fixture, allGoles: allGolesResp?.data || [], allTarjetas: allTarjetasResp?.data || [] };
+  const extra = await computeExtraStats(jugador, torneoId, preloaded);
+  const enrichedJ = { ...jugador, ...extra };
   const ctx = await computePlayerContext(enrichedJ, torneoId, preloaded);
 
   const xp = calcularXP(enrichedJ);
   const nivel = calcularNivel(xp);
-  const misiones = misionesCompletadas(enrichedJ, j.posicion, ctx);
+  const misiones = misionesCompletadas(enrichedJ, jugador.posicion, ctx);
   const completadas = misiones.filter(m => m.completada).length;
   const totalMisiones = misiones.length;
 
@@ -505,7 +503,7 @@ window.mostrarMisiones = async function() {
       <h2 style="color:#eab308; text-align:center; margin:0 0 15px 0;">🎯 Misiones</h2>
       <label class="label-accent">Seleccioná un jugador:</label>
       <input type="text" id="misiones-search" placeholder="🔍 Buscar jugador..." oninput="filtrarMisionesJugadores(this.value)" style="margin-bottom:6px;">
-      <select id="misiones-select" onchange="cargarMisionesJugador(this.value)" style="margin-bottom:15px;">
+      <select id="misiones-select" onchange="cargarMisionesJugador(this.value, null)" style="margin-bottom:15px;">
         <option value="">— Elegir jugador —</option>
         ${jugadores.map(j => `<option value="${j.id}">${escapeHtml(j.nombre)} ${j.posicion === 'POR' ? '🧤' : '⚽'}</option>`).join('')}
       </select>
@@ -519,7 +517,7 @@ window.mostrarMisiones = async function() {
   const nameMatch = jugadores.find(j => userEmail.toLowerCase().includes(j.nombre.toLowerCase().split(' ')[0].toLowerCase()));
   if (nameMatch && jugadores.length > 0) {
     document.getElementById('misiones-select').value = nameMatch.id;
-    await cargarMisionesJugador(nameMatch.id);
+    await cargarMisionesJugador(null, nameMatch);
   }
 };
 
@@ -531,18 +529,24 @@ window.filtrarMisionesJugadores = function(text) {
   select.innerHTML = '<option value="">— Elegir jugador —</option>' +
     jugadores
       .filter(j => !term || j.nombre.toLowerCase().includes(term))
-      .map(j => `<option value="${j.id}">${escapeHtml(j.nombre)} ${j.posicion === 'POR' ? '🧤' : '⚽'}</option>`)
+      .map(j => `<option value="${j.id}" data-nombre="${escapeHtml(j.nombre)}" data-pos="${j.posicion}">${escapeHtml(j.nombre)} ${j.posicion === 'POR' ? '🧤' : '⚽'}</option>`)
       .join('');
 };
 
-window.cargarMisionesJugador = async function(jugadorId) {
+window.cargarMisionesJugador = async function(jugadorId, jugadorObj) {
   const cont = document.getElementById('misiones-content');
-  if (!jugadorId || !cont) return;
+  if (!cont) return;
+
+  if (!jugadorObj && jugadorId) {
+    const jugadores = window._misionesJugadores || [];
+    jugadorObj = jugadores.find(j => String(j.id) === String(jugadorId) || j.id == jugadorId);
+  }
+  if (!jugadorObj) { cont.innerHTML = '<p style="color:#ef4444;">Jugador no encontrado</p>'; return; }
+
   cont.innerHTML = '<p style="color:#8b949e;">Cargando...</p>';
 
   try {
-    const preJugadores = window._misionesJugadores || null;
-    const result = await computeMisionesForPlayer(jugadorId, torneoActual, preJugadores);
+    const result = await computeMisionesForPlayer(jugadorObj, torneoActual);
     if (!result) { cont.innerHTML = '<p style="color:#ef4444;">Jugador no encontrado</p>'; return; }
 
     const { jugador, xp, nivel, misiones, completadas, totalMisiones, ctx } = result;
